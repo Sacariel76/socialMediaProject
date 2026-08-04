@@ -37,7 +37,7 @@ function savePosts(posts) {
 function savePost(post) {
   const posts = getPosts();
 
-  posts.push(post);
+  posts.unshift(post);
   savePosts(posts);
 }
 
