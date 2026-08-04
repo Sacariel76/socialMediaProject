@@ -76,6 +76,44 @@
     .publicacion .mensaje {
       margin-bottom: 5px;
     }
+    .acciones-publicacion {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid #ddd;
+    }
+
+    .contador-likes {
+    color: #555;
+    font-size: 14px;
+    font-weight: bold;
+    }
+
+    .btn-like {
+    width: 42px;
+    height: 38px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: #fce7ec;
+    color: #d6335c;
+    font-size: 24px;
+    line-height: 38px;
+    text-align: center;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+    }
+
+    .btn-like:hover {
+    background: #f8cbd6;
+    transform: scale(1.1);
+    }
+
+    .btn-like:active {
+    transform: scale(0.95);
+    }
   </style>
 </head>
 <body>
@@ -86,11 +124,18 @@
     <input type="text" id="nombre" name="nombre" placeholder="Escribe tu nombre" maxlength="50">
 
     <label for="mensaje">Mensaje</label>
-    <textarea id="mensaje" name="mensaje" rows="3" placeholder="Escribe tu mensaje" maxlength="200"></textarea>
+    <textarea id="mensaje"
+      name="mensaje"
+      rows="3"
+      placeholder="Escribe tu mensaje"
+      maxlength="200"
+    ></textarea>
 
     <p id="aviso"></p>
 
-    <button type="submit" id="btn-publicar">Publicar</button>
+    <button type="submit" id="btn-publicar">
+      Publicar
+    </button>
   </form>
 
   <ul id="publicaciones"></ul>

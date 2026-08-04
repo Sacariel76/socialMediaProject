@@ -29,7 +29,8 @@ document.addEventListener("DOMContentLoaded", function () {
     }
 
     if (mensajeTexto.length > 200) {
-      aviso.textContent = "El mensaje no puede superar los 200 caracteres.";
+      aviso.textContent =
+        "El mensaje no puede superar los 200 caracteres.";
       mensaje.focus();
       return;
     }
@@ -43,10 +44,12 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
     savePost(post);
-    nombre.value = "";
-    mensaje.value = "";
+
+    formulario.reset();
     aviso.textContent = "";
+
     renderPosts();
+    nombre.focus();
   });
 
   renderPosts();
