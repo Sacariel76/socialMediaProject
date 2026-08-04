@@ -16,8 +16,20 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
+    if (!/^[A-Za-z\u00C0-\u00FF\s]+$/.test(nombreTexto)) {
+      aviso.textContent = "El nombre solo puede contener letras.";
+      nombre.focus();
+      return;
+    }
+
     if (!mensajeTexto) {
       aviso.textContent = "El mensaje es obligatorio.";
+      mensaje.focus();
+      return;
+    }
+
+    if (mensajeTexto.length > 200) {
+      aviso.textContent = "El mensaje no puede superar los 200 caracteres.";
       mensaje.focus();
       return;
     }
