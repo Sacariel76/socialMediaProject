@@ -166,12 +166,13 @@ function actualizarResumen() {
   }
 }
 
-function crearComentario(comentario) {
+function crearComentario(comentario, postId) {
   const div = document.createElement("div");
   div.className = "comentario";
 
   const avatar = document.createElement("span");
   avatar.className = "c-avatar";
+
   avatar.textContent = (comentario.nombre || "?")
     .trim()
     .charAt(0)
@@ -190,19 +191,187 @@ function crearComentario(comentario) {
 
   const fecha = document.createElement("span");
   fecha.className = "c-fecha";
+
   fecha.textContent = comentario.fecha
-    ? tiempoRelativo(new Date(comentario.fecha))
+    ? tiempoRelativo(
+        new Date(comentario.fecha)
+      )
     : "";
 
+  // Acciones del comentario
+  const acciones = document.createElement("div");
+  acciones.className = "c-acciones";
+
+  // Botón Editar
+  const botonEditar = document.createElement("button");
+  botonEditar.type = "button";
+  botonEditar.className = "btn-editar-comentario";
+  botonEditar.textContent = "Editar";
+
+  botonEditar.addEventListener(
+    "click",
+    function () {
+      iniciarEdicionComentario(
+        cuerpo,
+        postId,
+        comentario
+      );
+    }
+  );
+
+  // Botón Eliminar
+  const botonEliminar =
+    document.createElement("button");
+
+  botonEliminar.type = "button";
+  botonEliminar.className =
+    "btn-eliminar-comentario";
+
+  botonEliminar.textContent = "Eliminar";
+
+  botonEliminar.addEventListener(
+    "click",
+    function () {
+      const confirmar = window.confirm(
+        "¿Está seguro de que desea eliminar este comentario?"
+      );
+
+      if (!confirmar) {
+        return;
+      }
+
+      deleteComment(
+        postId,
+        comentario.id
+      );
+
+      renderPosts();
+    }
+  );
+
+  acciones.appendChild(botonEditar);
+  acciones.appendChild(botonEliminar);
+
   cuerpo.appendChild(autor);
-  cuerpo.appendChild(document.createTextNode(" "));
+  cuerpo.appendChild(
+    document.createTextNode(" ")
+  );
   cuerpo.appendChild(texto);
   cuerpo.appendChild(fecha);
+  cuerpo.appendChild(acciones);
 
   div.appendChild(avatar);
   div.appendChild(cuerpo);
 
   return div;
+}
+
+function iniciarEdicionComentario(
+  cuerpo,
+  postId,
+  comentario
+) {
+  const autor = document.createElement("span");
+  autor.className = "c-autor";
+  autor.textContent = comentario.nombre;
+
+  const textarea =
+    document.createElement("textarea");
+
+  textarea.className =
+    "edit-comentario-input";
+
+  textarea.value = comentario.texto;
+  textarea.maxLength = 200;
+
+  const fecha = document.createElement("span");
+  fecha.className = "c-fecha";
+
+  fecha.textContent = comentario.fecha
+    ? tiempoRelativo(
+        new Date(comentario.fecha)
+      )
+    : "";
+
+  const error = document.createElement("p");
+  error.className =
+    "aviso-edicion-comentario";
+
+  const botones =
+    document.createElement("div");
+
+  botones.className =
+    "botones-edicion-comentario";
+
+  const botonGuardar =
+    document.createElement("button");
+
+  botonGuardar.type = "button";
+  botonGuardar.className =
+    "btn-guardar-comentario";
+
+  botonGuardar.textContent = "Guardar";
+
+  const botonCancelar =
+    document.createElement("button");
+
+  botonCancelar.type = "button";
+  botonCancelar.className =
+    "btn-cancelar-comentario";
+
+  botonCancelar.textContent = "Cancelar";
+
+  botones.appendChild(botonGuardar);
+  botones.appendChild(botonCancelar);
+
+  cuerpo.innerHTML = "";
+
+  cuerpo.appendChild(autor);
+  cuerpo.appendChild(textarea);
+  cuerpo.appendChild(fecha);
+  cuerpo.appendChild(error);
+  cuerpo.appendChild(botones);
+
+  botonGuardar.addEventListener(
+    "click",
+    function () {
+      const nuevoTexto =
+        textarea.value.trim();
+
+      if (!nuevoTexto) {
+        error.textContent =
+          "El comentario no puede estar vacío.";
+
+        textarea.focus();
+        return;
+      }
+
+      if (nuevoTexto.length > 200) {
+        error.textContent =
+          "El comentario no puede superar los 200 caracteres.";
+
+        textarea.focus();
+        return;
+      }
+
+      updateComment(
+        postId,
+        comentario.id,
+        nuevoTexto
+      );
+
+      renderPosts();
+    }
+  );
+
+  botonCancelar.addEventListener(
+    "click",
+    function () {
+      renderPosts();
+    }
+  );
+
+  textarea.focus();
 }
 
 function crearFormularioComentario(post) {
@@ -246,6 +415,7 @@ function crearFormularioComentario(post) {
     }
 
     addComment(post.id, {
+      id: generarIdComentario(),
       nombre: nombreTexto,
       texto: comentarioTexto,
       fecha: new Date().toISOString(),
@@ -289,9 +459,16 @@ function crearPublicacion(post) {
   const contenedorComentarios = document.createElement("div");
   contenedorComentarios.className = "comentarios";
 
-  (post.comentarios || []).forEach((comentario) => {
-    contenedorComentarios.appendChild(crearComentario(comentario));
-  });
+  (post.comentarios || []).forEach(
+    (comentario) => {
+      contenedorComentarios.appendChild(
+        crearComentario(
+          comentario,
+          post.id
+        )
+      );
+    }
+  );
 
   const formComentario = crearFormularioComentario(post);
   contenedorComentarios.appendChild(formComentario);
