@@ -65,6 +65,30 @@ function incrementLike(postId) {
 }
 
 /**
+ * Actualiza el mensaje de una publicación existente sin alterar
+ * el nombre, la fecha original ni la cantidad de Me gusta.
+ *
+ * @param {number} postId Identificador de la publicación.
+ * @param {string} mensaje Nuevo mensaje de la publicación.
+ */
+function updatePost(postId, mensaje) {
+  const posts = getPosts();
+
+  const postsActualizados = posts.map((post) => {
+    if (post.id === postId) {
+      return {
+        ...post,
+        mensaje,
+      };
+    }
+
+    return post;
+  });
+
+  savePosts(postsActualizados);
+}
+
+/**
  * Elimina una publicación utilizando su id.
  *
  * @param {number} postId Identificador de la publicación.
