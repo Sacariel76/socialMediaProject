@@ -177,7 +177,7 @@ Antes de llamar al docente o declarar una historia terminada, el equipo debe com
 | H8 | 3 | | Buscar publicaciones. □ Pasa  □ Falla | |
 | H9 | 3 | | Ordenar publicaciones entre secciones. □ Pasa  □ Falla | |
 | H10 | 2 | | Resumen de actividad de la red social. □ Pasa  □ Falla | |
-| H11 | 2 | | - | |
+| H11 | 2 | | Límite de 200 caracteres al crear y editar. □ Pasa  □ Falla | |
 
 ### Errores importantes encontrados y corregidos:
 ________________________________________________________________________________
@@ -225,7 +225,7 @@ Verificación realizada sobre el código actual (rama `main`) revisando los crit
 | H8 Buscar | 3 | ✔ Implementada / cumple criterios | Campo de búsqueda en la barra superior, filtra al escribir (evento `input`), sin distinguir mayúsculas/minúsculas, al limpiar vuelven todas, si no hay coincidencias muestra "No se encontraron publicaciones para tu búsqueda". No modifica el arreglo original (`filter` sobre copia). |
 | H9 Ordenar | 3 | ✔ Implementada / cumple criterios | Selector Recientes / Antiguas / Más gustadas, `ordenarPublicaciones` trabaja con copia (`[...posts]`) sin alterar el arreglo guardado, funciona junto con la búsqueda, al recargar las publicaciones se mantienen y el selector vuelve a "Más recientes". |
 | H10 Resumen | 2 | ✔ Implementada / cumple criterios | Tarjeta de resumen con total de publicaciones, Me gusta y comentarios; se actualiza tras publicar, editar, eliminar, comentar o reaccionar (se recalcula en `renderPosts`); con LocalStorage vacío muestra 0; calcula todo desde el arreglo sin contadores duplicados. |
-| H11 | 2 | ✘ Sin especificación | No se indica el criterio en el backlog ("cambio obligatorio" sin descripción). |
+| H11 | 2 | ✔ Implementada / cumple criterios | Constante compartida `LIMITE_MENSAJE = 200` (publicaciones.js), `maxlength="200"` en el formulario de creación y en la edición, contador "Quedan N caracteres" en el compositor que se actualiza al escribir y vuelve a 200 al publicar, validación al crear y al guardar una edición (no permite superar el límite), resto de funciones sin cambios. |
 
 ### Funciones de la versión base (conservadas)
 - Publicar con validación de nombre y mensaje: app.js.

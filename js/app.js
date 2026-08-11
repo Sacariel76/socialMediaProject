@@ -3,6 +3,21 @@ document.addEventListener("DOMContentLoaded", function () {
   const nombre = document.getElementById("nombre");
   const mensaje = document.getElementById("mensaje");
   const aviso = document.getElementById("aviso");
+  const contadorCaracteres = document.getElementById("contador-caracteres");
+
+  function actualizarContadorCaracteres() {
+    const restantes = LIMITE_MENSAJE - mensaje.value.length;
+
+    contadorCaracteres.textContent =
+      restantes === 1
+        ? "Queda 1 carácter"
+        : `Quedan ${restantes} caracteres`;
+
+    contadorCaracteres.classList.toggle(
+      "limite",
+      restantes <= 0
+    );
+  }
 
   const buscar = document.getElementById("buscar");
   const selectorOrden = document.getElementById("orden-publicaciones");
@@ -16,6 +31,8 @@ document.addEventListener("DOMContentLoaded", function () {
     estadoFeed.orden = selectorOrden.value;
     renderPosts();
   });
+
+  mensaje.addEventListener("input", actualizarContadorCaracteres);
 
   formulario.addEventListener("submit", function (evento) {
     evento.preventDefault();
@@ -41,9 +58,9 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    if (mensajeTexto.length > 200) {
+    if (mensajeTexto.length > LIMITE_MENSAJE) {
       aviso.textContent =
-        "El mensaje no puede superar los 200 caracteres.";
+        `El mensaje no puede superar los ${LIMITE_MENSAJE} caracteres.`;
       mensaje.focus();
       return;
     }
@@ -60,10 +77,12 @@ document.addEventListener("DOMContentLoaded", function () {
 
     formulario.reset();
     aviso.textContent = "";
+    actualizarContadorCaracteres();
 
     renderPosts();
     nombre.focus();
   });
 
+  actualizarContadorCaracteres();
   renderPosts();
 });

@@ -192,6 +192,18 @@
     .compositor-pie .btn-publicar:hover {
       background: var(--azul-oscuro);
     }
+
+    .contador-caracteres {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--texto-suave);
+      white-space: nowrap;
+    }
+
+    .contador-caracteres.limite {
+      color: var(--peligro);
+      font-weight: 600;
+    }
     .orden-container {
       background: #fff;
       padding: 12px 15px;
@@ -606,6 +618,7 @@
 
       <div class="compositor-pie">
         <input type="text" id="nombre" name="nombre" placeholder="Tu nombre" maxlength="50">
+        <span id="contador-caracteres" class="contador-caracteres" aria-live="polite">Quedan 200 caracteres</span>
         <button type="submit" id="btn-publicar" class="btn-publicar">Publicar</button>
       </div>
 

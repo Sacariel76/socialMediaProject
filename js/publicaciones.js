@@ -1,3 +1,5 @@
+const LIMITE_MENSAJE = 200;
+
 const estadoFeed = {
   busqueda: "",
   orden: "recientes",
@@ -396,7 +398,7 @@ function iniciarEdicion(mensajeDiv, post) {
   const textarea = document.createElement("textarea");
   textarea.value = post.mensaje;
   textarea.className = "edit-textarea";
-  textarea.maxLength = 200;
+  textarea.maxLength = LIMITE_MENSAJE;
 
   const error = document.createElement("p");
   error.className = "aviso-edicion";
@@ -426,6 +428,13 @@ function iniciarEdicion(mensajeDiv, post) {
 
     if (!texto) {
       error.textContent = "El mensaje no puede estar vacío.";
+      textarea.focus();
+      return;
+    }
+
+    if (texto.length > LIMITE_MENSAJE) {
+      error.textContent =
+        `El mensaje no puede superar los ${LIMITE_MENSAJE} caracteres.`;
       textarea.focus();
       return;
     }
