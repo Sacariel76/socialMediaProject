@@ -98,11 +98,13 @@
       border: 1px solid var(--borde);
       border-radius: 8px;
       display: flex;
+      flex-wrap: wrap;
       margin-bottom: 16px;
     }
 
     .resumen-item {
       flex: 1;
+      min-width: 100px;
       text-align: center;
       padding: 14px 8px;
       border-right: 1px solid var(--borde);
@@ -495,19 +497,51 @@
       position: relative;
     }
 
-    .contador-likes {
-      position: absolute;
-      top: -20px;
-      right: 0;
+    /* Contadores de reacciones (H13) */
+    .contador-reacciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: 12px;
+      padding: 6px 2px 2px;
       font-size: 13px;
       color: var(--texto-suave);
       font-weight: 600;
     }
 
+    /* Botones de reacción (H13) */
+    .botones-reaccion {
+      display: flex;
+      gap: 4px;
+      border-top: 1px solid #e4e6eb;
+      padding-top: 4px;
+    }
+
+    .botones-reaccion .btn-reaccion {
+      flex: 1;
+      background: none;
+      border: none;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--texto-suave);
+      padding: 8px 4px;
+      border-radius: 6px;
+      cursor: pointer;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .botones-reaccion .btn-reaccion:hover {
+      background: var(--hover);
+      color: var(--texto);
+    }
+
     .botones-publicacion {
       display: flex;
       border-top: 1px solid #e4e6eb;
-      margin-top: 8px;
+      margin-top: 4px;
     }
 
     .botones-publicacion button {
@@ -532,17 +566,6 @@
     .botones-publicacion button:hover {
       background: var(--hover);
       color: var(--texto);
-    }
-
-    .btn-like {
-      font-size: 17px;
-    }
-
-    .btn-like::after {
-      content: "Me gusta";
-      font-size: 14px;
-      font-weight: 600;
-      font-family: "Segoe UI", system-ui, Arial, sans-serif;
     }
 
     .btn-comentar {
@@ -600,7 +623,15 @@
       </div>
       <div class="resumen-item">
         <span class="resumen-num" id="total-likes">0</span>
-        <span class="resumen-label">Me gusta</span>
+        <span class="resumen-label">👍 Me gusta</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-num" id="total-meencanta">0</span>
+        <span class="resumen-label">❤️ Me encanta</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-num" id="total-medivierte">0</span>
+        <span class="resumen-label">😄 Me divierte</span>
       </div>
       <div class="resumen-item">
         <span class="resumen-num" id="total-comentarios">0</span>

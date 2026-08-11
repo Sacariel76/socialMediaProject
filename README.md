@@ -147,6 +147,27 @@ Pruebas mínimas
 
 Restricción técnica: Calcular los datos a partir del arreglo; no mantener contadores duplicados en LocalStorage.
 
+### H13. Reacciones múltiples (5 puntos)
+Como estudiante, quiero reaccionar de distintas maneras a una publicación para expresar mejor mi opinión.
+
+Criterios de aceptación
+- Cada publicación permite seleccionar una reacción: Me gusta, Me encanta o Me divierte.
+- La aplicación muestra por separado la cantidad de cada tipo de reacción.
+- Al seleccionar una reacción, aumenta únicamente el contador correspondiente de la publicación elegida.
+- Las reacciones de una publicación no modifican las de las demás.
+- Las cantidades permanecen después de recargar la página.
+- Las publicaciones antiguas que solo tengan el contador Me gusta continúan mostrándose sin errores.
+- El resumen de actividad incluye todas las reacciones si la H10 está implementada.
+
+Pruebas mínimas
+- Aplicar dos reacciones de cada tipo y verificar que los tres contadores sean correctos.
+- Reaccionar a la segunda de tres publicaciones; las otras dos deben conservar sus valores.
+- Recargar la página y comprobar que todas las cantidades permanezcan.
+- Iniciar con datos antiguos de LocalStorage que no tengan las nuevas propiedades; la aplicación no debe fallar.
+- Buscar u ordenar publicaciones y luego reaccionar; debe actualizarse la publicación correcta.
+
+Restricción técnica: Ampliar cada publicación con una estructura de reacciones y asignar cero cuando una propiedad no exista. Evitar contadores separados fuera del objeto de la publicación.
+
 ## 5. Pruebas de regresión obligatorias
 
 | N.º | Prueba | Resultado esperado | Estado |
@@ -178,6 +199,7 @@ Antes de llamar al docente o declarar una historia terminada, el equipo debe com
 | H9 | 3 | | Ordenar publicaciones entre secciones. □ Pasa  □ Falla | |
 | H10 | 2 | | Resumen de actividad de la red social. □ Pasa  □ Falla | |
 | H11 | 2 | | Límite de 200 caracteres al crear y editar. □ Pasa  □ Falla | |
+| H13 | 5 | | Reacciones múltiples (Me gusta, Me encanta, Me divierte). □ Pasa  □ Falla | |
 
 ### Errores importantes encontrados y corregidos:
 ________________________________________________________________________________
@@ -225,6 +247,7 @@ Verificación realizada sobre el código actual (rama `main`) revisando los crit
 | H8 Buscar | 3 | ✔ Implementada / cumple criterios | Campo de búsqueda en la barra superior, filtra al escribir (evento `input`), sin distinguir mayúsculas/minúsculas, al limpiar vuelven todas, si no hay coincidencias muestra "No se encontraron publicaciones para tu búsqueda". No modifica el arreglo original (`filter` sobre copia). |
 | H9 Ordenar | 3 | ✔ Implementada / cumple criterios | Selector Recientes / Antiguas / Más gustadas, `ordenarPublicaciones` trabaja con copia (`[...posts]`) sin alterar el arreglo guardado, funciona junto con la búsqueda, al recargar las publicaciones se mantienen y el selector vuelve a "Más recientes". |
 | H10 Resumen | 2 | ✔ Implementada / cumple criterios | Tarjeta de resumen con total de publicaciones, Me gusta y comentarios; se actualiza tras publicar, editar, eliminar, comentar o reaccionar (se recalcula en `renderPosts`); con LocalStorage vacío muestra 0; calcula todo desde el arreglo sin contadores duplicados. |
+| H13 Reacciones múltiples | 5 | ✔ Implementada / cumple criterios | Cada publicación tiene tres botones (👍 Me gusta, ❤️ Me encanta, 😄 Me divierte) y una fila de contadores separados por tipo. `incrementReaction(postId, tipo)` (storage.js) aumenta solo el tipo indicado de la publicación buscada por `id`, sin tocar las demás. Los datos viven en `post.reacciones = { megusta, meencanta, medivierte }` dentro del objeto de la publicación; `normalizarPost` asigna cero a las propiedades faltantes y convierte el `likes` de las publicaciones antiguas en `megusta`, por lo que los datos previos no rompen la aplicación. `likes` se mantiene sincronizado con `megusta` para no alterar H9 (Más gustadas) ni H10. El resumen muestra los totales de los tres tipos. |
 | H11 | 2 | ✔ Implementada / cumple criterios | Constante compartida `LIMITE_MENSAJE = 200` (publicaciones.js), `maxlength="200"` en el formulario de creación y en la edición, contador "Quedan N caracteres" en el compositor que se actualiza al escribir y vuelve a 200 al publicar, validación al crear y al guardar una edición (no permite superar el límite), resto de funciones sin cambios. |
 
 ### Funciones de la versión base (conservadas)
@@ -232,6 +255,16 @@ Verificación realizada sobre el código actual (rama `main`) revisando los crit
 - Listar publicaciones con fecha/hora almacenada y mostrada en formato relativo.
 - Me gusta: publicaciones.js, storage.js `incrementLike`.
 - LocalStorage: storage.js (getPosts/savePosts).
+
+### Pruebas mínimas de H13 ejecutadas
+| Prueba | Resultado |
+| --- | --- |
+| Dos reacciones de cada tipo en una publicación | Contadores 👍/❤️/😄 correctos (base + 2 en cada tipo). |
+| Reaccionar a la segunda de tres publicaciones | Las otras dos conservan sus valores. |
+| Recargar la página | Las tres cantidades permanecen (leídas desde `post.reacciones`). |
+| Iniciar con datos antiguos sin las propiedades nuevas | La aplicación inicia sin errores; `likes` antiguo se muestra como Me gusta y el resto en cero. |
+| Buscar u ordenar y luego reaccionar | Se actualiza la publicación correcta (los manejadores usan `post.id`). |
+| LocalStorage vacío o con datos corruptos | Muestra el mensaje de lista vacía; `getPosts` devuelve `[]`. |
 
 ### Pruebas mínimas de H5 ejecutables en el código
 - Cancelar confirmación conserva la publicación: cubierto por la salida temprana en el manejador de Eliminar.

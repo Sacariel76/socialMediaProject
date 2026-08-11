@@ -1,9 +1,41 @@
 const LIMITE_MENSAJE = 200;
 
+/**
+ * Reacciones disponibles (H13) con su icono, etiqueta y el id
+ * del contador que les corresponde en el resumen de actividad.
+ */
+const REACCIONES = [
+  { tipo: "megusta", icono: "👍", etiqueta: "Me gusta", idResumen: "total-likes" },
+  { tipo: "meencanta", icono: "❤️", etiqueta: "Me encanta", idResumen: "total-meencanta" },
+  { tipo: "medivierte", icono: "😄", etiqueta: "Me divierte", idResumen: "total-medivierte" },
+];
+
 const estadoFeed = {
   busqueda: "",
   orden: "recientes",
 };
+
+/**
+ * Lee la cantidad de una reacción de una publicación (H13).
+ * Devuelve cero cuando la propiedad no existe, de modo que las
+ * publicaciones antiguas se muestran sin errores.
+ *
+ * @param {Object} post Publicación que se desea consultar.
+ * @param {string} tipo Tipo de reacción.
+ * @returns {number} Cantidad de esa reacción.
+ */
+function obtenerCantidadReaccion(post, tipo) {
+  const reacciones = post.reacciones || {};
+
+  const cantidad =
+    tipo === "megusta" && reacciones.megusta === undefined
+      ? post.likes
+      : reacciones[tipo];
+
+  const numero = Number(cantidad);
+
+  return Number.isFinite(numero) && numero > 0 ? Math.floor(numero) : 0;
+}
 
 function tiempoRelativo(fecha) {
   const minutos = Math.floor((Date.now() - fecha.getTime()) / 60000);
@@ -96,17 +128,12 @@ function actualizarResumen() {
   const posts = getPosts();
 
   const totalPublicaciones = posts.length;
-  const totalLikes = posts.reduce(
-    (suma, post) => suma + Number(post.likes || 0),
-    0
-  );
   const totalComentarios = posts.reduce(
     (suma, post) => suma + (post.comentarios ? post.comentarios.length : 0),
     0
   );
 
   const contPosts = document.getElementById("total-publicaciones");
-  const contLikes = document.getElementById("total-likes");
   const contComentarios = document.getElementById("total-comentarios");
   const conteo = document.getElementById("conteo-publicaciones");
 
@@ -114,9 +141,19 @@ function actualizarResumen() {
     contPosts.textContent = totalPublicaciones;
   }
 
-  if (contLikes) {
-    contLikes.textContent = totalLikes;
-  }
+  // Totales por tipo de reacción (H13)
+  REACCIONES.forEach((reaccion) => {
+    const total = posts.reduce(
+      (suma, post) => suma + obtenerCantidadReaccion(post, reaccion.tipo),
+      0
+    );
+
+    const contador = document.getElementById(reaccion.idResumen);
+
+    if (contador) {
+      contador.textContent = total;
+    }
+  });
 
   if (contComentarios) {
     contComentarios.textContent = totalComentarios;
@@ -263,37 +300,49 @@ function crearPublicacion(post) {
   const acciones = document.createElement("div");
   acciones.className = "acciones-publicacion";
 
-  // Contador de Me gusta
-  const contadorLikes = document.createElement("span");
-  contadorLikes.className = "contador-likes";
+  // Contadores por tipo de reacción (H13)
+  const contadores = document.createElement("div");
+  contadores.className = "contador-reacciones";
 
-  const cantidadLikes = Number(post.likes || 0);
+  REACCIONES.forEach((reaccion) => {
+    const cantidad = obtenerCantidadReaccion(post, reaccion.tipo);
 
-  contadorLikes.textContent =
-    cantidadLikes === 1
-      ? "1 Me gusta"
-      : `${cantidadLikes} Me gusta`;
+    const contador = document.createElement("span");
+    contador.className = "contador-reaccion";
+    contador.setAttribute("data-tipo", reaccion.tipo);
+    contador.title = `${cantidad} ${reaccion.etiqueta}`;
+    contador.textContent = `${reaccion.icono} ${cantidad}`;
+
+    contadores.appendChild(contador);
+  });
+
+  // Botones de reacción (H13)
+  const botonesReaccion = document.createElement("div");
+  botonesReaccion.className = "botones-reaccion";
+
+  REACCIONES.forEach((reaccion) => {
+    const boton = document.createElement("button");
+    boton.type = "button";
+    boton.className = `btn-reaccion btn-${reaccion.tipo}`;
+    boton.setAttribute("data-tipo", reaccion.tipo);
+    boton.textContent = `${reaccion.icono} ${reaccion.etiqueta}`;
+
+    boton.setAttribute(
+      "aria-label",
+      `Reaccionar con ${reaccion.etiqueta} a la publicación de ${post.nombre}`
+    );
+
+    boton.addEventListener("click", function () {
+      incrementReaction(post.id, reaccion.tipo);
+      renderPosts();
+    });
+
+    botonesReaccion.appendChild(boton);
+  });
 
   // Contenedor de botones
   const botones = document.createElement("div");
   botones.className = "botones-publicacion";
-
-  // Botón Me gusta
-  const botonLike = document.createElement("button");
-  botonLike.type = "button";
-  botonLike.className = "btn-like";
-  botonLike.textContent = "♥";
-  botonLike.title = "Me gusta";
-
-  botonLike.setAttribute(
-    "aria-label",
-    `Dar Me gusta a la publicación de ${post.nombre}`
-  );
-
-  botonLike.addEventListener("click", function () {
-    incrementLike(post.id);
-    renderPosts();
-  });
 
   // Botón Comentar
   const botonComentar = document.createElement("button");
@@ -340,13 +389,13 @@ function crearPublicacion(post) {
   });
 
   // Agregar botones
-  botones.appendChild(botonLike);
   botones.appendChild(botonComentar);
   botones.appendChild(botonEditar);
   botones.appendChild(botonEliminar);
 
   // Agregar acciones
-  acciones.appendChild(contadorLikes);
+  acciones.appendChild(contadores);
+  acciones.appendChild(botonesReaccion);
   acciones.appendChild(botones);
 
   // Agregar elementos a la publicación

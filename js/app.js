@@ -70,6 +70,11 @@ document.addEventListener("DOMContentLoaded", function () {
       nombre: nombreTexto,
       mensaje: mensajeTexto,
       likes: 0,
+      reacciones: {
+        megusta: 0,
+        meencanta: 0,
+        medivierte: 0,
+      },
       fecha: new Date().toISOString(),
     };
 
