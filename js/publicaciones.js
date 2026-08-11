@@ -1,8 +1,47 @@
+/**
+ * Ordena una copia de las publicaciones según un criterio.
+ * Nunca modifica el arreglo original.
+ *
+ * @param {Array} posts Lista original de publicaciones.
+ * @param {string} criterio Criterio: "recientes", "antiguas" o "mas-gustadas".
+ * @returns {Array} Copia ordenada de las publicaciones.
+ */
+function ordenarPublicaciones(posts, criterio) {
+  const copia = [...posts];
+
+  switch (criterio) {
+    case "antiguas":
+      copia.sort((a, b) => {
+        const porFecha = new Date(a.fecha) - new Date(b.fecha);
+        return porFecha !== 0 ? porFecha : a.id - b.id;
+      });
+      break;
+    case "mas-gustadas":
+      copia.sort((a, b) => {
+        const porLikes = Number(b.likes || 0) - Number(a.likes || 0);
+        return porLikes !== 0 ? porLikes : a.id - b.id;
+      });
+      break;
+    case "recientes":
+    default:
+      copia.sort((a, b) => {
+        const porFecha = new Date(b.fecha) - new Date(a.fecha);
+        return porFecha !== 0 ? porFecha : a.id - b.id;
+      });
+      break;
+  }
+
+  return copia;
+}
+
 function renderPosts() {
   const lista = document.getElementById("publicaciones");
   lista.innerHTML = "";
 
-  const posts = getPosts();
+  const selector = document.getElementById("orden-publicaciones");
+  const criterio = selector ? selector.value : "recientes";
+
+  const posts = ordenarPublicaciones(getPosts(), criterio);
 
   posts.forEach((post) => {
     const li = document.createElement("li");

@@ -3,6 +3,11 @@ document.addEventListener("DOMContentLoaded", function () {
   const nombre = document.getElementById("nombre");
   const mensaje = document.getElementById("mensaje");
   const aviso = document.getElementById("aviso");
+  const selectorOrden = document.getElementById("orden-publicaciones");
+
+  selectorOrden.addEventListener("change", function () {
+    renderPosts();
+  });
 
   formulario.addEventListener("submit", function (evento) {
     evento.preventDefault();
