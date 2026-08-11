@@ -192,6 +192,18 @@
     .compositor-pie .btn-publicar:hover {
       background: var(--azul-oscuro);
     }
+
+    .contador-caracteres {
+      margin-left: auto;
+      font-size: 12px;
+      color: var(--texto-suave);
+      white-space: nowrap;
+    }
+
+    .contador-caracteres.limite {
+      color: var(--peligro);
+      font-weight: 600;
+    }
     .orden-container {
       background: #fff;
       padding: 12px 15px;
@@ -569,6 +581,97 @@
         margin-left: 0;
       }
     }
+    /* Editar y eliminar comentarios - H12 */
+
+.c-acciones {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 5px;
+}
+
+.c-acciones button {
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-editar-comentario {
+  color: var(--azul);
+}
+
+.btn-editar-comentario:hover {
+  text-decoration: underline;
+}
+
+.btn-eliminar-comentario {
+  color: var(--texto-suave);
+}
+
+.btn-eliminar-comentario:hover {
+  color: var(--peligro);
+  text-decoration: underline;
+}
+
+.edit-comentario-input {
+  display: block;
+  width: 100%;
+  min-width: 220px;
+  min-height: 55px;
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--azul);
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+  outline: none;
+}
+
+.aviso-edicion-comentario {
+  color: var(--peligro);
+  font-size: 12px;
+  margin: 5px 0;
+  min-height: 1em;
+}
+
+.botones-edicion-comentario {
+  display: flex;
+  gap: 7px;
+  margin-top: 6px;
+}
+
+.botones-edicion-comentario button {
+  border: none;
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-guardar-comentario {
+  background: var(--azul);
+  color: white;
+}
+
+.btn-guardar-comentario:hover {
+  background: var(--azul-oscuro);
+}
+
+.btn-cancelar-comentario {
+  background: #e4e6eb;
+  color: var(--texto);
+}
+
+.btn-cancelar-comentario:hover {
+  background: #d8dadf;
+}
   </style>
 </head>
 <body>
@@ -606,6 +709,7 @@
 
       <div class="compositor-pie">
         <input type="text" id="nombre" name="nombre" placeholder="Tu nombre" maxlength="50">
+        <span id="contador-caracteres" class="contador-caracteres" aria-live="polite">Quedan 200 caracteres</span>
         <button type="submit" id="btn-publicar" class="btn-publicar">Publicar</button>
       </div>
 
@@ -623,17 +727,6 @@
     </div>
 
     <ul id="publicaciones"></ul>
-
-  <div class="orden-container">
-    <label for="orden-publicaciones">Ordenar por</label>
-    <select id="orden-publicaciones" name="orden">
-      <option value="recientes">Recientes</option>
-      <option value="antiguas">Antiguas</option>
-      <option value="mas-gustadas">Más gustadas</option>
-    </select>
-  </div>
-
-  <ul id="publicaciones"></ul>
 
   <script src="js/storage.js"></script>
   <script src="js/publicaciones.js"></script>
