@@ -1,3 +1,27 @@
+function tiempoRelativo(fecha) {
+  const minutos = Math.floor((Date.now() - fecha.getTime()) / 60000);
+
+  if (minutos < 1) {
+    return "Justo ahora";
+  }
+
+  if (minutos < 60) {
+    return `Hace ${minutos} min`;
+  }
+
+  const horas = Math.floor(minutos / 60);
+
+  if (horas < 24) {
+    return `Hace ${horas} h`;
+  }
+
+  return fecha.toLocaleDateString("es-CR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  });
+}
+
 function renderPosts() {
   const lista = document.getElementById("publicaciones");
 
@@ -12,7 +36,21 @@ function renderPosts() {
     // Nombre
     const nombre = document.createElement("div");
     nombre.className = "nombre";
+    nombre.setAttribute(
+      "data-inicial",
+      (post.nombre || "?").trim().charAt(0).toUpperCase()
+    );
     nombre.textContent = post.nombre;
+
+    // Fecha / hora
+    const fecha = post.fecha ? new Date(post.fecha) : null;
+
+    if (fecha) {
+      const fechaDiv = document.createElement("div");
+      fechaDiv.className = "fecha";
+      fechaDiv.textContent = tiempoRelativo(fecha);
+      li.appendChild(fechaDiv);
+    }
 
     // Mensaje
     const mensaje = document.createElement("div");
