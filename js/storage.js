@@ -37,7 +37,8 @@ function savePosts(posts) {
 function savePost(post) {
   const posts = getPosts();
 
-  posts.unshift(post);
+  posts.push(post);
+
   savePosts(posts);
 }
 
@@ -58,6 +59,45 @@ function incrementLike(postId) {
     }
 
     return post;
+  });
+
+  savePosts(postsActualizados);
+}
+
+/**
+ * Actualiza el mensaje de una publicación existente sin alterar
+ * el nombre, la fecha original ni la cantidad de Me gusta.
+ *
+ * @param {number} postId Identificador de la publicación.
+ * @param {string} mensaje Nuevo mensaje de la publicación.
+ */
+function updatePost(postId, mensaje) {
+  const posts = getPosts();
+
+  const postsActualizados = posts.map((post) => {
+    if (post.id === postId) {
+      return {
+        ...post,
+        mensaje,
+      };
+    }
+
+    return post;
+  });
+
+  savePosts(postsActualizados);
+}
+
+/**
+ * Elimina una publicación utilizando su id.
+ *
+ * @param {number} postId Identificador de la publicación.
+ */
+function deletePost(postId) {
+  const posts = getPosts();
+
+  const postsActualizados = posts.filter((post) => {
+    return post.id !== postId;
   });
 
   savePosts(postsActualizados);
