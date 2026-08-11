@@ -37,7 +37,8 @@ function savePosts(posts) {
 function savePost(post) {
   const posts = getPosts();
 
-  posts.unshift(post);
+  posts.push(post);
+
   savePosts(posts);
 }
 
@@ -58,6 +59,21 @@ function incrementLike(postId) {
     }
 
     return post;
+  });
+
+  savePosts(postsActualizados);
+}
+
+/**
+ * Elimina una publicación utilizando su id.
+ *
+ * @param {number} postId Identificador de la publicación.
+ */
+function deletePost(postId) {
+  const posts = getPosts();
+
+  const postsActualizados = posts.filter((post) => {
+    return post.id !== postId;
   });
 
   savePosts(postsActualizados);

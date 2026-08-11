@@ -1,5 +1,6 @@
 function renderPosts() {
   const lista = document.getElementById("publicaciones");
+
   lista.innerHTML = "";
 
   const posts = getPosts();
@@ -8,17 +9,21 @@ function renderPosts() {
     const li = document.createElement("li");
     li.className = "publicacion";
 
+    // Nombre
     const nombre = document.createElement("div");
     nombre.className = "nombre";
     nombre.textContent = post.nombre;
 
+    // Mensaje
     const mensaje = document.createElement("div");
     mensaje.className = "mensaje";
     mensaje.textContent = post.mensaje;
 
+    // Contenedor de acciones
     const acciones = document.createElement("div");
     acciones.className = "acciones-publicacion";
 
+    // Contador de Me gusta
     const contadorLikes = document.createElement("span");
     contadorLikes.className = "contador-likes";
 
@@ -29,6 +34,11 @@ function renderPosts() {
         ? "1 Me gusta"
         : `${cantidadLikes} Me gusta`;
 
+    // Contenedor de botones
+    const botones = document.createElement("div");
+    botones.className = "botones-publicacion";
+
+    // Botón Me gusta
     const botonLike = document.createElement("button");
     botonLike.type = "button";
     botonLike.className = "btn-like";
@@ -45,9 +55,35 @@ function renderPosts() {
       renderPosts();
     });
 
-    acciones.appendChild(contadorLikes);
-    acciones.appendChild(botonLike);
+    // Botón Eliminar
+    const botonEliminar = document.createElement("button");
+    botonEliminar.type = "button";
+    botonEliminar.className = "btn-eliminar";
+    botonEliminar.textContent = "Eliminar";
 
+    botonEliminar.addEventListener("click", function () {
+      const confirmar = window.confirm(
+        "¿Está seguro de que desea eliminar esta publicación?"
+      );
+
+      if (!confirmar) {
+        return;
+      }
+
+      deletePost(post.id);
+
+      renderPosts();
+    });
+
+    // Agregar botones
+    botones.appendChild(botonLike);
+    botones.appendChild(botonEliminar);
+
+    // Agregar acciones
+    acciones.appendChild(contadorLikes);
+    acciones.appendChild(botones);
+
+    // Agregar elementos a la publicación
     li.appendChild(nombre);
     li.appendChild(mensaje);
     li.appendChild(acciones);
