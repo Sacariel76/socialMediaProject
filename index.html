@@ -14,6 +14,7 @@
       --borde: #ced0d4;
       --superficie: #ffffff;
       --hover: #f0f2f5;
+      --peligro: #e41e3f;
     }
 
     * {
@@ -37,6 +38,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 12px;
       padding: 8px 16px;
     }
 
@@ -44,6 +46,7 @@
       display: flex;
       align-items: center;
       gap: 10px;
+      flex-shrink: 0;
     }
 
     .logo-icono {
@@ -65,14 +68,62 @@
       letter-spacing: -0.3px;
     }
 
-    .buscar-falso {
-      display: none;
+    .buscar {
+      flex: 1;
+      max-width: 320px;
+      border: 1px solid var(--borde);
+      border-radius: 20px;
+      padding: 9px 16px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--texto);
+      background: var(--fondo);
+      outline: none;
+    }
+
+    .buscar:focus {
+      border-color: var(--azul);
+      background: #fff;
     }
 
     .contenedor {
       max-width: 680px;
       margin: 20px auto 60px;
       padding: 0 12px;
+    }
+
+    /* Resumen de actividad (H10) */
+    .resumen {
+      background: var(--superficie);
+      border: 1px solid var(--borde);
+      border-radius: 8px;
+      display: flex;
+      margin-bottom: 16px;
+    }
+
+    .resumen-item {
+      flex: 1;
+      text-align: center;
+      padding: 14px 8px;
+      border-right: 1px solid var(--borde);
+    }
+
+    .resumen-item:last-child {
+      border-right: none;
+    }
+
+    .resumen-num {
+      display: block;
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--azul);
+    }
+
+    .resumen-label {
+      display: block;
+      font-size: 12px;
+      color: var(--texto-suave);
+      margin-top: 2px;
     }
 
     /* Compositor estilo Facebook */
@@ -143,11 +194,49 @@
     }
 
     #aviso {
-      color: #e41e3f;
+      color: var(--peligro);
       font-size: 13px;
       font-weight: 600;
       margin: 8px 4px 0;
       min-height: 1.3em;
+    }
+
+    /* Barra de herramientas: conteo y orden (H9) */
+    .toolbar {
+      background: var(--superficie);
+      border: 1px solid var(--borde);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .toolbar-conteo {
+      font-size: 14px;
+      color: var(--texto-suave);
+    }
+
+    .toolbar-conteo strong {
+      color: var(--texto);
+    }
+
+    #orden-publicaciones {
+      border: 1px solid var(--borde);
+      border-radius: 6px;
+      padding: 8px 10px;
+      font-family: inherit;
+      font-size: 14px;
+      color: var(--texto);
+      background: #fff;
+      outline: none;
+      cursor: pointer;
+    }
+
+    #orden-publicaciones:focus {
+      border-color: var(--azul);
     }
 
     #publicaciones {
@@ -208,13 +297,178 @@
       word-wrap: break-word;
     }
 
+    /* Edición (H6) */
+    .edit-textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px 12px;
+      margin-bottom: 8px;
+      border: 1.5px solid var(--azul);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 15px;
+      resize: vertical;
+      min-height: 70px;
+    }
+
+    .aviso-edicion {
+      color: var(--peligro);
+      font-size: 13px;
+      margin: 0 0 6px;
+      min-height: 1.2em;
+    }
+
+    .botones-edicion {
+      display: flex;
+      gap: 8px;
+    }
+
+    .botones-edicion button {
+      border: none;
+      border-radius: 6px;
+      padding: 8px 16px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-guardar {
+      background: var(--azul);
+      color: #fff;
+    }
+
+    .btn-guardar:hover {
+      background: var(--azul-oscuro);
+    }
+
+    .btn-cancelar {
+      background: #e4e6eb;
+      color: var(--texto);
+    }
+
+    .btn-cancelar:hover {
+      background: #d8dadf;
+    }
+
+    /* Comentarios (H7) */
+    .comentarios {
+      margin: 10px 0 2px 50px;
+    }
+
+    .comentario {
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+      margin-bottom: 14px;
+    }
+
+    .c-avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--azul), #0d65d9);
+      color: #fff;
+      font-size: 14px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .c-cuerpo {
+      background: var(--fondo);
+      border-radius: 18px;
+      padding: 7px 12px;
+      max-width: calc(100% - 40px);
+    }
+
+    .c-autor {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .c-texto {
+      font-size: 14px;
+      word-wrap: break-word;
+    }
+
+    .c-fecha {
+      display: block;
+      font-size: 11px;
+      color: var(--texto-suave);
+      margin-top: 2px;
+    }
+
+    .form-comentario {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 6px;
+    }
+
+    .form-comentario input {
+      border: 1px solid var(--borde);
+      border-radius: 18px;
+      padding: 8px 12px;
+      font-family: inherit;
+      font-size: 14px;
+      background: var(--fondo);
+      outline: none;
+      color: var(--texto);
+    }
+
+    .form-comentario input:focus {
+      border-color: var(--azul);
+      background: #fff;
+    }
+
+    .c-nombre {
+      width: 120px;
+    }
+
+    .c-texto {
+      flex: 1;
+      min-width: 160px;
+    }
+
+    .form-comentario .btn-enviar-comentario {
+      background: var(--azul);
+      color: #fff;
+      border: none;
+      border-radius: 18px;
+      padding: 8px 16px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .form-comentario .btn-enviar-comentario:hover {
+      background: var(--azul-oscuro);
+    }
+
+    .aviso-comentario {
+      width: 100%;
+      color: var(--peligro);
+      font-size: 12px;
+      margin: 4px 0 0;
+    }
+
+    .oculto {
+      display: none;
+    }
+
+    /* Acciones */
     .acciones-publicacion {
       position: relative;
     }
 
     .contador-likes {
       position: absolute;
-      top: -22px;
+      top: -20px;
       right: 0;
       font-size: 13px;
       color: var(--texto-suave);
@@ -224,7 +478,7 @@
     .botones-publicacion {
       display: flex;
       border-top: 1px solid #e4e6eb;
-      margin-top: 6px;
+      margin-top: 8px;
     }
 
     .botones-publicacion button {
@@ -235,13 +489,14 @@
       font-size: 14px;
       font-weight: 600;
       color: var(--texto-suave);
-      padding: 10px 6px;
+      padding: 10px 4px;
       border-radius: 6px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 7px;
+      gap: 6px;
+      white-space: nowrap;
       transition: background 0.15s, color 0.15s;
     }
 
@@ -261,15 +516,19 @@
       font-family: "Segoe UI", system-ui, Arial, sans-serif;
     }
 
+    .btn-comentar {
+      font-size: 14px;
+    }
+
     .btn-eliminar:hover {
-      color: #e41e3f;
+      color: var(--peligro);
     }
 
     .vacio {
       text-align: center;
       color: var(--texto-suave);
       background: var(--superficie);
-      border: 1px solid var(--borde);
+      border: 1px dashed var(--borde);
       border-radius: 8px;
       padding: 40px 20px;
       font-size: 15px;
@@ -282,112 +541,17 @@
       padding: 24px 0 40px;
     }
 
-<<<<<<< HEAD
-  .botones-publicacion {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-  }
+    @media (max-width: 520px) {
+      .marca-texto {
+        display: none;
+      }
 
-  .btn-like {
-    width: 42px;
-    height: 38px;
-    padding: 0;
-    border: none;
-    border-radius: 50%;
-    background: #fce7ec;
-    color: #d6335c;
-    font-size: 24px;
-    line-height: 38px;
-    text-align: center;
-    cursor: pointer;
-  }
-
-  .btn-like:hover {
-    background: #f8cbd6;
-    transform: scale(1.1);
-  }
-
-  .btn-eliminar {
-    background: #dc3545;
-    color: white;
-    border: none;
-    padding: 9px 13px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .btn-eliminar:hover {
-    background: #b02a37;
-  }
-
-  .btn-editar {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 9px 13px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .btn-editar:hover {
-    background: #565e64;
-  }
-
-  .edit-textarea {
-    width: 100%;
-    box-sizing: border-box;
-    padding: 8px;
-    margin-bottom: 5px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-
-  .aviso-edicion {
-    color: #c00;
-    margin: 0 0 5px;
-    min-height: 1.2em;
-    font-size: 13px;
-  }
-
-  .botones-edicion {
-    display: flex;
-    gap: 10px;
-  }
-
-  .btn-guardar {
-    background: #4a90d9;
-    color: white;
-    border: none;
-    padding: 8px 13px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .btn-guardar:hover {
-    background: #3a78bf;
-  }
-
-  .btn-cancelar {
-    background: #6c757d;
-    color: white;
-    border: none;
-    padding: 8px 13px;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-
-  .btn-cancelar:hover {
-    background: #565e64;
-  }
-
-  @media (max-width: 520px) {
-    .publicacion .mensaje,
-    .publicacion .fecha {
-      margin-left: 0;
+      .publicacion .mensaje,
+      .publicacion .fecha,
+      .comentarios {
+        margin-left: 0;
+      }
     }
-  }
   </style>
 </head>
 <body>
@@ -396,9 +560,25 @@
       <span class="logo-icono">G3</span>
       <span class="marca-texto">Red Social</span>
     </div>
+    <input type="search" id="buscar" class="buscar" placeholder="Buscar por nombre o mensaje...">
   </div>
 
   <main class="contenedor">
+    <div class="resumen">
+      <div class="resumen-item">
+        <span class="resumen-num" id="total-publicaciones">0</span>
+        <span class="resumen-label">Publicaciones</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-num" id="total-likes">0</span>
+        <span class="resumen-label">Me gusta</span>
+      </div>
+      <div class="resumen-item">
+        <span class="resumen-num" id="total-comentarios">0</span>
+        <span class="resumen-label">Comentarios</span>
+      </div>
+    </div>
+
     <form id="formulario-publicacion" class="compositor">
       <textarea id="mensaje"
         name="mensaje"
@@ -414,6 +594,16 @@
 
       <p id="aviso" aria-live="polite"></p>
     </form>
+
+    <div class="toolbar">
+      <span class="toolbar-conteo" id="conteo-publicaciones">0 publicaciones</span>
+      <label for="orden-publicaciones" class="oculto">Ordenar por</label>
+      <select id="orden-publicaciones" name="orden">
+        <option value="recientes">Más recientes</option>
+        <option value="antiguas">Más antiguas</option>
+        <option value="mas-gustadas">Más gustadas</option>
+      </select>
+    </div>
 
     <ul id="publicaciones"></ul>
 

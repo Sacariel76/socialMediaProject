@@ -4,6 +4,19 @@ document.addEventListener("DOMContentLoaded", function () {
   const mensaje = document.getElementById("mensaje");
   const aviso = document.getElementById("aviso");
 
+  const buscar = document.getElementById("buscar");
+  const selectorOrden = document.getElementById("orden-publicaciones");
+
+  buscar.addEventListener("input", function () {
+    estadoFeed.busqueda = buscar.value.trim();
+    renderPosts();
+  });
+
+  selectorOrden.addEventListener("change", function () {
+    estadoFeed.orden = selectorOrden.value;
+    renderPosts();
+  });
+
   formulario.addEventListener("submit", function (evento) {
     evento.preventDefault();
 

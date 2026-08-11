@@ -215,25 +215,25 @@ ________________________________________________________________________________
 
 ## 9. Estado de verificación del código (sesión de continuidad)
 
-Verificación realizada sobre el código actual (rama `main`, commit `5ec4b28`) revisando los criterios de aceptación de cada historia:
+Verificación realizada sobre el código actual (rama `main`) revisando los criterios de aceptación de cada historia:
 
 | Historia | Puntos | Estado | Criterios cumplidos |
 | --- | --- | --- | --- |
-| H5 Eliminar | 2 | ✔ Implementada / cumple criterios | Botón Eliminar por publicación (publicaciones.js:59), confirmación con `window.confirm` (publicaciones.js:65), borra solo la seleccionada por `id` (storage.js:72), persiste en LocalStorage (storage.js:79). Cumple la restricción técnica (usa `post.id`, no posición ni texto). |
-| H6 Editar | 3 | ✘ No implementada | No existe acción Editar ni actualización del mensaje. |
-| H7 Comentar | 5 | ✘ No implementada | No existe la propiedad `comentarios` ni formulario de comentarios. |
-| H8 Buscar | 3 | ✘ No implementada | No existe campo de búsqueda. |
-| H9 Ordenar | 3 | ✘ No implementada | No existe selector de orden. |
-| H10 Resumen | 2 | ✘ No implementada | No existe resumen de actividad. |
-| H11 | 2 | ✘ Sin especificación | No se indica el criterio en el backlog. |
+| H5 Eliminar | 2 | ✔ Implementada / cumple criterios | Botón Eliminar por publicación, confirmación con `window.confirm`, borra solo la seleccionada por `id` (storage.js `deletePost`), persiste en LocalStorage. Cumple la restricción técnica (usa `post.id`, no posición ni texto). |
+| H6 Editar | 3 | ✔ Implementada / cumple criterios | Botón Editar por publicación, textarea inline, no permite guardar vacío (validación "El mensaje no puede estar vacío"), actualiza el objeto existente con `updatePost` sin tocar nombre/fecha/likes, persiste al recargar. |
+| H7 Comentar | 5 | ✔ Implementada / cumple criterios | Botón Comentar despliega formulario con nombre y comentario (ambos obligatorios, validación de error), cada comentario muestra autor, texto y fecha/hora, se guardan en la propiedad `comentarios` de la publicación (storage.js `addComment`), maneja publicaciones antiguas sin la propiedad con `post.comentarios \|\| []`. |
+| H8 Buscar | 3 | ✔ Implementada / cumple criterios | Campo de búsqueda en la barra superior, filtra al escribir (evento `input`), sin distinguir mayúsculas/minúsculas, al limpiar vuelven todas, si no hay coincidencias muestra "No se encontraron publicaciones para tu búsqueda". No modifica el arreglo original (`filter` sobre copia). |
+| H9 Ordenar | 3 | ✔ Implementada / cumple criterios | Selector Recientes / Antiguas / Más gustadas, `ordenarPublicaciones` trabaja con copia (`[...posts]`) sin alterar el arreglo guardado, funciona junto con la búsqueda, al recargar las publicaciones se mantienen y el selector vuelve a "Más recientes". |
+| H10 Resumen | 2 | ✔ Implementada / cumple criterios | Tarjeta de resumen con total de publicaciones, Me gusta y comentarios; se actualiza tras publicar, editar, eliminar, comentar o reaccionar (se recalcula en `renderPosts`); con LocalStorage vacío muestra 0; calcula todo desde el arreglo sin contadores duplicados. |
+| H11 | 2 | ✘ Sin especificación | No se indica el criterio en el backlog ("cambio obligatorio" sin descripción). |
 
 ### Funciones de la versión base (conservadas)
-- Publicar con validación de nombre y mensaje: app.js:7-53.
-- Listar publicaciones con fecha/hora almacenada: app.js:43, publicaciones.js:8.
-- Me gusta: publicaciones.js:53, storage.js:50.
+- Publicar con validación de nombre y mensaje: app.js.
+- Listar publicaciones con fecha/hora almacenada y mostrada en formato relativo.
+- Me gusta: publicaciones.js, storage.js `incrementLike`.
 - LocalStorage: storage.js (getPosts/savePosts).
 
 ### Pruebas mínimas de H5 ejecutables en el código
-- Cancelar confirmación conserva la publicación: cubierto por la salida temprana en publicaciones.js:69-71.
+- Cancelar confirmación conserva la publicación: cubierto por la salida temprana en el manejador de Eliminar.
 - Eliminar la segunda de tres no afecta a las demás: `deletePost` filtra solo el id objetivo.
 - Recargar no recupera la publicación: el borrado se persiste con `savePosts`.
