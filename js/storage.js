@@ -89,6 +89,31 @@ function updatePost(postId, mensaje) {
 }
 
 /**
+ * Agrega un comentario a una publicación existente.
+ * Las publicaciones antiguas sin la propiedad comentarios
+ * se tratan como si tuvieran un arreglo vacío.
+ *
+ * @param {number} postId Identificador de la publicación.
+ * @param {Object} comentario Comentario que se desea guardar.
+ */
+function addComment(postId, comentario) {
+  const posts = getPosts();
+
+  const postsActualizados = posts.map((post) => {
+    if (post.id === postId) {
+      return {
+        ...post,
+        comentarios: [...(post.comentarios || []), comentario],
+      };
+    }
+
+    return post;
+  });
+
+  savePosts(postsActualizados);
+}
+
+/**
  * Elimina una publicación utilizando su id.
  *
  * @param {number} postId Identificador de la publicación.
