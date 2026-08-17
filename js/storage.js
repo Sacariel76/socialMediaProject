@@ -3,6 +3,10 @@ const STORAGE_KEY = "publicaciones";
 /** Tipos de reacción disponibles (H13). */
 const TIPOS_REACCION = ["megusta", "meencanta", "medivierte"];
 
+/** Límites de los datos de una respuesta (H14). */
+const LIMITE_NOMBRE_RESPUESTA = 50;
+const LIMITE_TEXTO_RESPUESTA = 200;
+
 /**
  * Convierte cualquier valor en una cantidad válida de reacciones.
  * Los valores ausentes, negativos o no numéricos se tratan como cero.
@@ -78,6 +82,41 @@ function generarIdComentario() {
 }
 
 /**
+ * Genera un identificador único para una respuesta (H14).
+ *
+ * @returns {string} Identificador único.
+ */
+function generarIdRespuesta() {
+  if (
+    window.crypto &&
+    typeof window.crypto.randomUUID === "function"
+  ) {
+    return window.crypto.randomUUID();
+  }
+
+  return `respuesta-${Date.now()}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+}
+
+/**
+ * Devuelve un id de respuesta que no esté presente en los datos actuales.
+ *
+ * @param {Set} idsEnUso Identificadores ya almacenados.
+ * @returns {string} Identificador único dentro de la aplicación.
+ */
+function generarIdRespuestaUnico(idsEnUso) {
+  let id;
+
+  do {
+    id = generarIdRespuesta();
+  } while (idsEnUso.has(id));
+
+  idsEnUso.add(id);
+  return id;
+}
+
+/**
  * Obtiene las publicaciones guardadas en LocalStorage.
  *
  * También asigna un id a comentarios antiguos que todavía
@@ -86,69 +125,16 @@ function generarIdComentario() {
  * @returns {Array} Lista de publicaciones.
  */
 function getPosts() {
-  const datos = localStorage.getItem(STORAGE_KEY);
-
-  if (!datos) {
-    return [];
-  }
+  let posts;
 
   try {
-    const posts = JSON.parse(datos);
+    const datos = localStorage.getItem(STORAGE_KEY);
 
-    if (!Array.isArray(posts)) {
+    if (!datos) {
       return [];
     }
 
-    let huboCambios = false;
-
-    const postsNormalizados = posts.map((post) => {
-      // Completa las reacciones de la publicación (H13).
-      const normalizado = normalizarPost(post);
-
-      if (!Array.isArray(normalizado.comentarios)) {
-        return normalizado;
-      }
-
-      let cambioPost = false;
-
-      const comentariosActualizados = normalizado.comentarios.map(
-        (comentario) => {
-          if (
-            comentario.id !== undefined &&
-            comentario.id !== null &&
-            comentario.id !== ""
-          ) {
-            return comentario;
-          }
-
-          huboCambios = true;
-          cambioPost = true;
-
-          return {
-            ...comentario,
-            id: generarIdComentario(),
-          };
-        }
-      );
-
-      if (!cambioPost) {
-        return normalizado;
-      }
-
-      return {
-        ...normalizado,
-        comentarios: comentariosActualizados,
-      };
-    });
-
-    if (huboCambios) {
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(postsNormalizados)
-      );
-    }
-
-    return postsNormalizados;
+    posts = JSON.parse(datos);
   } catch (error) {
     console.error(
       "No fue posible leer las publicaciones:",
@@ -157,6 +143,113 @@ function getPosts() {
 
     return [];
   }
+
+  if (!Array.isArray(posts)) {
+    return [];
+  }
+
+  let huboCambios = false;
+  const idsRespuestas = new Set();
+
+  const postsNormalizados = posts.map((post) => {
+    // Completa las reacciones de la publicación (H13).
+    const normalizado = normalizarPost(post);
+
+    if (!Array.isArray(normalizado.comentarios)) {
+      return normalizado;
+    }
+
+    let cambioPost = false;
+
+    const comentariosActualizados = normalizado.comentarios.map(
+      (comentario) => {
+        const baseComentario =
+          comentario && typeof comentario === "object"
+            ? comentario
+            : {};
+
+        const tieneId =
+          baseComentario.id !== undefined &&
+          baseComentario.id !== null &&
+          baseComentario.id !== "";
+
+        const respuestasOriginales = Array.isArray(
+          baseComentario.respuestas
+        )
+          ? baseComentario.respuestas
+          : [];
+
+        if (!tieneId || !Array.isArray(baseComentario.respuestas)) {
+          huboCambios = true;
+          cambioPost = true;
+        }
+
+        const respuestas = respuestasOriginales.map((respuesta) => {
+          const baseRespuesta =
+            respuesta && typeof respuesta === "object"
+              ? respuesta
+              : {};
+
+          const idValido =
+            baseRespuesta.id !== undefined &&
+            baseRespuesta.id !== null &&
+            baseRespuesta.id !== "" &&
+            !idsRespuestas.has(baseRespuesta.id);
+
+          const id = idValido
+            ? baseRespuesta.id
+            : generarIdRespuestaUnico(idsRespuestas);
+
+          if (idValido) {
+            idsRespuestas.add(id);
+          } else {
+            huboCambios = true;
+            cambioPost = true;
+          }
+
+          return {
+            ...baseRespuesta,
+            id,
+          };
+        });
+
+        return {
+          ...baseComentario,
+          id: tieneId
+            ? baseComentario.id
+            : generarIdComentario(),
+          respuestas,
+        };
+      }
+    );
+
+    if (!cambioPost) {
+      return normalizado;
+    }
+
+    return {
+      ...normalizado,
+      comentarios: comentariosActualizados,
+    };
+  });
+
+  if (huboCambios) {
+    try {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(postsNormalizados)
+      );
+    } catch (error) {
+      // La aplicación puede seguir mostrando los datos normalizados aunque
+      // el navegador no permita persistir la migración en este momento.
+      console.error(
+        "No fue posible actualizar los datos antiguos:",
+        error
+      );
+    }
+  }
+
+  return postsNormalizados;
 }
 
 /**
@@ -266,6 +359,9 @@ function addComment(postId, comentario) {
     id:
       comentario.id ??
       generarIdComentario(),
+    respuestas: Array.isArray(comentario.respuestas)
+      ? comentario.respuestas
+      : [],
   };
 
   const postsActualizados = posts.map((post) => {
@@ -283,6 +379,125 @@ function addComment(postId, comentario) {
   });
 
   savePosts(postsActualizados);
+}
+
+/**
+ * Agrega una respuesta al comentario indicado (H14).
+ * La publicación y el comentario se localizan por sus identificadores, nunca
+ * por su posición visual ni por el contenido de sus textos.
+ *
+ * @param {number} postId Identificador de la publicación.
+ * @param {string} comentarioId Identificador del comentario.
+ * @param {Object} respuesta Datos introducidos por el usuario.
+ * @returns {Object} Resultado de la operación: { ok, mensaje?, respuesta? }.
+ */
+function addReply(postId, comentarioId, respuesta) {
+  const nombre = String(respuesta?.nombre || "").trim();
+  const texto = String(respuesta?.texto || "").trim();
+
+  if (!nombre || !texto) {
+    return {
+      ok: false,
+      mensaje: "El nombre y la respuesta son obligatorios.",
+    };
+  }
+
+  if (nombre.length > LIMITE_NOMBRE_RESPUESTA) {
+    return {
+      ok: false,
+      mensaje: `El nombre no puede superar los ${LIMITE_NOMBRE_RESPUESTA} caracteres.`,
+    };
+  }
+
+  if (texto.length > LIMITE_TEXTO_RESPUESTA) {
+    return {
+      ok: false,
+      mensaje: `La respuesta no puede superar los ${LIMITE_TEXTO_RESPUESTA} caracteres.`,
+    };
+  }
+
+  const posts = getPosts();
+  const idsRespuestas = new Set();
+
+  posts.forEach((post) => {
+    (post.comentarios || []).forEach((comentario) => {
+      (comentario.respuestas || []).forEach((item) => {
+        idsRespuestas.add(item.id);
+      });
+    });
+  });
+
+  const respuestaConId = {
+    id: generarIdRespuestaUnico(idsRespuestas),
+    nombre,
+    texto,
+    fecha: new Date().toISOString(),
+  };
+
+  let publicacionEncontrada = false;
+  let comentarioEncontrado = false;
+
+  const postsActualizados = posts.map((post) => {
+    if (post.id !== postId) {
+      return post;
+    }
+
+    publicacionEncontrada = true;
+
+    const comentariosActualizados = (post.comentarios || []).map(
+      (comentario) => {
+        if (comentario.id !== comentarioId) {
+          return comentario;
+        }
+
+        comentarioEncontrado = true;
+
+        return {
+          ...comentario,
+          respuestas: [
+            ...(comentario.respuestas || []),
+            respuestaConId,
+          ],
+        };
+      }
+    );
+
+    return {
+      ...post,
+      comentarios: comentariosActualizados,
+    };
+  });
+
+  if (!publicacionEncontrada) {
+    return {
+      ok: false,
+      mensaje: "La publicación seleccionada ya no existe.",
+    };
+  }
+
+  if (!comentarioEncontrado) {
+    return {
+      ok: false,
+      mensaje: "El comentario seleccionado ya no existe.",
+    };
+  }
+
+  try {
+    savePosts(postsActualizados);
+  } catch (error) {
+    console.error("No fue posible guardar la respuesta:", error);
+
+    return {
+      ok: false,
+      mensaje:
+        "No fue posible guardar la respuesta. Inténtalo nuevamente.",
+    };
+  }
+
+  return {
+    ok: true,
+    respuesta: respuestaConId,
+  };
 }
 
 /**
