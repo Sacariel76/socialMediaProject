@@ -189,14 +189,48 @@ function actualizarResumen() {
 }
 
 /**
- * Crea la representación visual de una respuesta.
+ * Crea el botón que despliega un formulario de respuesta.
+ *
+ * @param {HTMLFormElement} formulario Formulario asociado al elemento.
+ * @param {string} autor Nombre del autor al que se responde.
+ * @returns {HTMLButtonElement} Botón configurado.
+ */
+function crearBotonResponder(formulario, autor) {
+  const boton = document.createElement("button");
+  boton.type = "button";
+  boton.className = "btn-responder";
+  boton.textContent = "Responder";
+  boton.setAttribute("aria-expanded", "false");
+  boton.setAttribute(
+    "aria-label",
+    `Responder a ${autor || "autor desconocido"}`
+  );
+
+  boton.addEventListener("click", function () {
+    const oculto = formulario.classList.toggle("oculto");
+    boton.setAttribute("aria-expanded", String(!oculto));
+
+    if (!oculto) {
+      formulario.querySelector(".r-nombre-input").focus();
+    }
+  });
+
+  return boton;
+}
+
+/**
+ * Crea recursivamente una respuesta y todas sus descendientes.
  * Se utiliza textContent para que el contenido del usuario no se interprete
  * como HTML.
  *
  * @param {Object} respuesta Respuesta que se desea mostrar.
- * @returns {HTMLElement} Elemento de la respuesta.
+ * @param {number} postId Identificador de la publicación.
+ * @returns {HTMLElement} Hilo de la respuesta.
  */
-function crearRespuesta(respuesta) {
+function crearRespuesta(respuesta, postId) {
+  const hilo = document.createElement("div");
+  hilo.className = "hilo-respuesta";
+
   const div = document.createElement("div");
   div.className = "respuesta";
 
@@ -222,25 +256,50 @@ function crearRespuesta(respuesta) {
   fecha.className = "r-fecha";
   fecha.textContent = formatearFechaHora(respuesta.fecha);
 
+  const formulario = crearFormularioRespuesta(
+    postId,
+    respuesta.id
+  );
+
+  const acciones = document.createElement("div");
+  acciones.className = "r-acciones";
+  acciones.appendChild(
+    crearBotonResponder(formulario, respuesta.nombre)
+  );
+
   cuerpo.appendChild(autor);
   cuerpo.appendChild(document.createTextNode(" "));
   cuerpo.appendChild(texto);
   cuerpo.appendChild(fecha);
+  cuerpo.appendChild(acciones);
 
   div.appendChild(avatar);
   div.appendChild(cuerpo);
 
-  return div;
+  const respuestas = document.createElement("div");
+  respuestas.className = "respuestas respuestas-anidadas";
+
+  (respuesta.respuestas || []).forEach((respuestaHija) => {
+    respuestas.appendChild(
+      crearRespuesta(respuestaHija, postId)
+    );
+  });
+
+  respuestas.appendChild(formulario);
+  hilo.appendChild(div);
+  hilo.appendChild(respuestas);
+
+  return hilo;
 }
 
 /**
- * Crea y valida el formulario para responder un comentario.
+ * Crea y valida el formulario para responder un comentario o respuesta.
  *
  * @param {number} postId Identificador de la publicación.
- * @param {string} comentarioId Identificador del comentario.
+ * @param {string} elementoPadreId Id del comentario o respuesta padre.
  * @returns {HTMLFormElement} Formulario listo para insertarse.
  */
-function crearFormularioRespuesta(postId, comentarioId) {
+function crearFormularioRespuesta(postId, elementoPadreId) {
   const form = document.createElement("form");
   form.className = "form-respuesta oculto";
   form.noValidate = true;
@@ -309,7 +368,7 @@ function crearFormularioRespuesta(postId, comentarioId) {
       return;
     }
 
-    const resultado = addReply(postId, comentarioId, {
+    const resultado = addReply(postId, elementoPadreId, {
       nombre,
       texto,
     });
@@ -370,24 +429,10 @@ function crearComentario(comentario, postId) {
     comentario.id
   );
 
-  const botonResponder = document.createElement("button");
-  botonResponder.type = "button";
-  botonResponder.className = "btn-responder-comentario";
-  botonResponder.textContent = "Responder";
-  botonResponder.setAttribute("aria-expanded", "false");
-  botonResponder.setAttribute(
-    "aria-label",
-    `Responder al comentario de ${comentario.nombre || "autor desconocido"}`
+  const botonResponder = crearBotonResponder(
+    formularioRespuesta,
+    comentario.nombre
   );
-
-  botonResponder.addEventListener("click", function () {
-    const oculto = formularioRespuesta.classList.toggle("oculto");
-    botonResponder.setAttribute("aria-expanded", String(!oculto));
-
-    if (!oculto) {
-      formularioRespuesta.querySelector(".r-nombre-input").focus();
-    }
-  });
 
   // Botón Editar
   const botonEditar = document.createElement("button");
@@ -455,7 +500,9 @@ function crearComentario(comentario, postId) {
   respuestas.className = "respuestas";
 
   (comentario.respuestas || []).forEach((respuesta) => {
-    respuestas.appendChild(crearRespuesta(respuesta));
+    respuestas.appendChild(
+      crearRespuesta(respuesta, postId)
+    );
   });
 
   respuestas.appendChild(formularioRespuesta);

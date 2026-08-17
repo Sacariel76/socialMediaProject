@@ -178,6 +178,7 @@ Criterios de aceptación
 - La respuesta solicita nombre y texto; ambos son obligatorios.
 - La respuesta aparece debajo del comentario correcto y muestra autor, texto y fecha/hora.
 - Un comentario puede tener varias respuestas.
+- Cada respuesta también puede recibir respuestas, formando una conversación anidada sin un límite fijo de niveles.
 - Las respuestas pueden agregarse en publicaciones diferentes sin mezclarse.
 - Las respuestas permanecen después de recargar la página.
 - Los comentarios antiguos sin respuestas continúan mostrándose sin errores.
@@ -185,11 +186,12 @@ Criterios de aceptación
 Pruebas mínimas
 - Responder el segundo comentario de una publicación con tres comentarios.
 - Agregar dos respuestas al mismo comentario y una a otro comentario.
+- Responder una respuesta y continuar la conversación durante varios niveles.
 - Intentar responder con nombre vacío, texto vacío y solo espacios.
 - Recargar y comprobar que se conserva la relación publicación–comentario–respuesta.
 - Usar datos anteriores que no tengan la propiedad `respuestas`.
 
-Restricción técnica: Cada respuesta posee un `id` único. La publicación y el comentario se localizan por `id`, sin utilizar posiciones visuales ni texto como identificador.
+Restricción técnica: Cada respuesta posee un `id` único y su propio arreglo `respuestas`. La publicación y el elemento padre —comentario o respuesta— se localizan por `id`, sin utilizar posiciones visuales ni texto como identificador.
 
 ## 5. Pruebas de regresión obligatorias
 
@@ -271,7 +273,7 @@ Verificación realizada sobre el código actual (rama `main`) revisando los crit
 | H9 Ordenar | 3 | ✔ Implementada / cumple criterios | Selector Recientes / Antiguas / Más gustadas, `ordenarPublicaciones` trabaja con copia (`[...posts]`) sin alterar el arreglo guardado, funciona junto con la búsqueda, al recargar las publicaciones se mantienen y el selector vuelve a "Más recientes". |
 | H10 Resumen | 2 | ✔ Implementada / cumple criterios | Tarjeta de resumen con total de publicaciones, Me gusta y comentarios; se actualiza tras publicar, editar, eliminar, comentar o reaccionar (se recalcula en `renderPosts`); con LocalStorage vacío muestra 0; calcula todo desde el arreglo sin contadores duplicados. |
 | H13 Reacciones múltiples | 5 | ✔ Implementada / cumple criterios | Cada publicación tiene tres botones (👍 Me gusta, ❤️ Me encanta, 😄 Me divierte) y una fila de contadores separados por tipo. `incrementReaction(postId, tipo)` (storage.js) aumenta solo el tipo indicado de la publicación buscada por `id`, sin tocar las demás. Los datos viven en `post.reacciones = { megusta, meencanta, medivierte }` dentro del objeto de la publicación; `normalizarPost` asigna cero a las propiedades faltantes y convierte el `likes` de las publicaciones antiguas en `megusta`, por lo que los datos previos no rompen la aplicación. `likes` se mantiene sincronizado con `megusta` para no alterar H9 (Más gustadas) ni H10. El resumen muestra los totales de los tres tipos. |
-| H14 Responder comentarios | 5 | ✔ Implementada / cumple criterios | Cada comentario permite desplegar un formulario de respuesta con nombre y texto obligatorios. `addReply(postId, comentarioId, respuesta)` localiza ambos objetos por `id`, asigna un identificador único, guarda la respuesta dentro de `comentario.respuestas` y controla errores de validación, referencias inexistentes y escritura. Los datos antiguos se normalizan con `respuestas: []`. |
+| H14 Responder comentarios | 5 | ✔ Implementada / cumple criterios | Cada comentario y cada respuesta permiten desplegar un formulario con nombre y texto obligatorios. `addReply(postId, elementoPadreId, respuesta)` recorre el árbol por `id`, asigna un identificador único y guarda la respuesta bajo el padre correcto. El renderizado y la normalización son recursivos, por lo que se admiten conversaciones de varios niveles y datos antiguos sin `respuestas`. También se controlan referencias inexistentes y errores de escritura. |
 | H11 | 2 | ✔ Implementada / cumple criterios | Constante compartida `LIMITE_MENSAJE = 200` (publicaciones.js), `maxlength="200"` en el formulario de creación y en la edición, contador "Quedan N caracteres" en el compositor que se actualiza al escribir y vuelve a 200 al publicar, validación al crear y al guardar una edición (no permite superar el límite), resto de funciones sin cambios. |
 
 ### Funciones de la versión base (conservadas)

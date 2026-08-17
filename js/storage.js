@@ -119,6 +119,142 @@ function generarIdRespuestaUnico(idsEnUso) {
 }
 
 /**
+ * Normaliza una respuesta y todas sus descendientes (H14).
+ * Cada nivel recibe un arreglo de respuestas y un id único, de modo que los
+ * datos creados antes de incorporar conversaciones anidadas siguen siendo
+ * válidos.
+ *
+ * @param {*} respuesta Respuesta almacenada.
+ * @param {Set} idsEnUso Identificadores encontrados hasta el momento.
+ * @returns {{ respuesta: Object, huboCambios: boolean }} Resultado normalizado.
+ */
+function normalizarRespuesta(respuesta, idsEnUso) {
+  const base =
+    respuesta && typeof respuesta === "object"
+      ? respuesta
+      : {};
+
+  const idValido =
+    base.id !== undefined &&
+    base.id !== null &&
+    base.id !== "" &&
+    !idsEnUso.has(base.id);
+
+  const id = idValido
+    ? base.id
+    : generarIdRespuestaUnico(idsEnUso);
+
+  if (idValido) {
+    idsEnUso.add(id);
+  }
+
+  const respuestasOriginales = Array.isArray(base.respuestas)
+    ? base.respuestas
+    : [];
+
+  let huboCambios =
+    base !== respuesta ||
+    !idValido ||
+    !Array.isArray(base.respuestas);
+
+  const respuestas = respuestasOriginales.map((respuestaHija) => {
+    const resultado = normalizarRespuesta(
+      respuestaHija,
+      idsEnUso
+    );
+
+    if (resultado.huboCambios) {
+      huboCambios = true;
+    }
+
+    return resultado.respuesta;
+  });
+
+  return {
+    respuesta: {
+      ...base,
+      id,
+      respuestas,
+    },
+    huboCambios,
+  };
+}
+
+/**
+ * Registra recursivamente los ids de un árbol de respuestas.
+ *
+ * @param {Array} respuestas Respuestas del nivel actual.
+ * @param {Set} idsEnUso Colección en la que se registran los ids.
+ */
+function registrarIdsRespuestas(respuestas, idsEnUso) {
+  (respuestas || []).forEach((respuesta) => {
+    idsEnUso.add(respuesta.id);
+    registrarIdsRespuestas(respuesta.respuestas, idsEnUso);
+  });
+}
+
+/**
+ * Agrega una respuesta bajo el elemento indicado dentro de un árbol.
+ * Devuelve nuevas referencias solo para la rama modificada.
+ *
+ * @param {Array} elementos Comentarios o respuestas del nivel actual.
+ * @param {string} elementoPadreId Id del comentario o respuesta padre.
+ * @param {Object} nuevaRespuesta Respuesta que se desea agregar.
+ * @returns {{ elementos: Array, encontrado: boolean }} Árbol actualizado.
+ */
+function agregarRespuestaEnArbol(
+  elementos,
+  elementoPadreId,
+  nuevaRespuesta
+) {
+  for (let indice = 0; indice < elementos.length; indice += 1) {
+    const elemento = elementos[indice];
+
+    if (elemento.id === elementoPadreId) {
+      const actualizados = [...elementos];
+
+      actualizados[indice] = {
+        ...elemento,
+        respuestas: [
+          ...(elemento.respuestas || []),
+          nuevaRespuesta,
+        ],
+      };
+
+      return {
+        elementos: actualizados,
+        encontrado: true,
+      };
+    }
+
+    const resultadoHijos = agregarRespuestaEnArbol(
+      elemento.respuestas || [],
+      elementoPadreId,
+      nuevaRespuesta
+    );
+
+    if (resultadoHijos.encontrado) {
+      const actualizados = [...elementos];
+
+      actualizados[indice] = {
+        ...elemento,
+        respuestas: resultadoHijos.elementos,
+      };
+
+      return {
+        elementos: actualizados,
+        encontrado: true,
+      };
+    }
+  }
+
+  return {
+    elementos,
+    encontrado: false,
+  };
+}
+
+/**
  * Obtiene las publicaciones guardadas en LocalStorage.
  *
  * También asigna un id a comentarios antiguos que todavía
@@ -151,7 +287,26 @@ function getPosts() {
   }
 
   let huboCambios = false;
-  const idsRespuestas = new Set();
+  // Los ids de comentarios también se reservan porque la búsqueda del padre
+  // recorre comentarios y respuestas dentro del mismo árbol.
+  const idsElementos = new Set();
+
+  posts.forEach((post) => {
+    if (!Array.isArray(post?.comentarios)) {
+      return;
+    }
+
+    post.comentarios.forEach((comentario) => {
+      if (
+        comentario &&
+        comentario.id !== undefined &&
+        comentario.id !== null &&
+        comentario.id !== ""
+      ) {
+        idsElementos.add(comentario.id);
+      }
+    });
+  });
 
   const postsNormalizados = posts.map((post) => {
     // Completa las reacciones de la publicación (H13).
@@ -187,32 +342,17 @@ function getPosts() {
         }
 
         const respuestas = respuestasOriginales.map((respuesta) => {
-          const baseRespuesta =
-            respuesta && typeof respuesta === "object"
-              ? respuesta
-              : {};
+          const resultado = normalizarRespuesta(
+            respuesta,
+            idsElementos
+          );
 
-          const idValido =
-            baseRespuesta.id !== undefined &&
-            baseRespuesta.id !== null &&
-            baseRespuesta.id !== "" &&
-            !idsRespuestas.has(baseRespuesta.id);
-
-          const id = idValido
-            ? baseRespuesta.id
-            : generarIdRespuestaUnico(idsRespuestas);
-
-          if (idValido) {
-            idsRespuestas.add(id);
-          } else {
+          if (resultado.huboCambios) {
             huboCambios = true;
             cambioPost = true;
           }
 
-          return {
-            ...baseRespuesta,
-            id,
-          };
+          return resultado.respuesta;
         });
 
         return {
@@ -384,16 +524,16 @@ function addComment(postId, comentario) {
 }
 
 /**
- * Agrega una respuesta al comentario indicado (H14).
- * La publicación y el comentario se localizan por sus identificadores, nunca
- * por su posición visual ni por el contenido de sus textos.
+ * Agrega una respuesta al comentario o respuesta indicados (H14).
+ * La publicación y el elemento padre se localizan por sus identificadores,
+ * nunca por su posición visual ni por el contenido de sus textos.
  *
  * @param {number} postId Identificador de la publicación.
- * @param {string} comentarioId Identificador del comentario.
+ * @param {string} elementoPadreId Id del comentario o respuesta padre.
  * @param {Object} respuesta Datos introducidos por el usuario.
  * @returns {Object} Resultado de la operación: { ok, mensaje?, respuesta? }.
  */
-function addReply(postId, comentarioId, respuesta) {
+function addReply(postId, elementoPadreId, respuesta) {
   const nombre = String(respuesta?.nombre || "").trim();
   const texto = String(respuesta?.texto || "").trim();
 
@@ -419,25 +559,28 @@ function addReply(postId, comentarioId, respuesta) {
   }
 
   const posts = getPosts();
-  const idsRespuestas = new Set();
+  const idsElementos = new Set();
 
   posts.forEach((post) => {
     (post.comentarios || []).forEach((comentario) => {
-      (comentario.respuestas || []).forEach((item) => {
-        idsRespuestas.add(item.id);
-      });
+      idsElementos.add(comentario.id);
+      registrarIdsRespuestas(
+        comentario.respuestas,
+        idsElementos
+      );
     });
   });
 
   const respuestaConId = {
-    id: generarIdRespuestaUnico(idsRespuestas),
+    id: generarIdRespuestaUnico(idsElementos),
     nombre,
     texto,
     fecha: new Date().toISOString(),
+    respuestas: [],
   };
 
   let publicacionEncontrada = false;
-  let comentarioEncontrado = false;
+  let elementoPadreEncontrado = false;
 
   const postsActualizados = posts.map((post) => {
     if (post.id !== postId) {
@@ -446,27 +589,17 @@ function addReply(postId, comentarioId, respuesta) {
 
     publicacionEncontrada = true;
 
-    const comentariosActualizados = (post.comentarios || []).map(
-      (comentario) => {
-        if (comentario.id !== comentarioId) {
-          return comentario;
-        }
-
-        comentarioEncontrado = true;
-
-        return {
-          ...comentario,
-          respuestas: [
-            ...(comentario.respuestas || []),
-            respuestaConId,
-          ],
-        };
-      }
+    const resultado = agregarRespuestaEnArbol(
+      post.comentarios || [],
+      elementoPadreId,
+      respuestaConId
     );
+
+    elementoPadreEncontrado = resultado.encontrado;
 
     return {
       ...post,
-      comentarios: comentariosActualizados,
+      comentarios: resultado.elementos,
     };
   });
 
@@ -477,10 +610,11 @@ function addReply(postId, comentarioId, respuesta) {
     };
   }
 
-  if (!comentarioEncontrado) {
+  if (!elementoPadreEncontrado) {
     return {
       ok: false,
-      mensaje: "El comentario seleccionado ya no existe.",
+      mensaje:
+        "El comentario o la respuesta seleccionada ya no existe.",
     };
   }
 
