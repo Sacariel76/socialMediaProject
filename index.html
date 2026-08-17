@@ -488,6 +488,120 @@
       margin: 4px 0 0;
     }
 
+    /* Respuestas a comentarios (H14) */
+    .hilo-comentario {
+      margin-bottom: 14px;
+    }
+
+    .hilo-comentario .comentario {
+      margin-bottom: 0;
+    }
+
+    .respuestas {
+      margin: 8px 0 0 38px;
+    }
+
+    .respuesta {
+      display: flex;
+      align-items: flex-start;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .r-avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 25px;
+      height: 25px;
+      border-radius: 50%;
+      background: #6b7280;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .r-cuerpo {
+      max-width: calc(100% - 32px);
+      padding: 6px 10px;
+      border-radius: 14px;
+      background: #eef1f5;
+    }
+
+    .r-autor {
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .r-texto {
+      font-size: 13px;
+      overflow-wrap: anywhere;
+    }
+
+    .r-fecha {
+      display: block;
+      margin-top: 2px;
+      color: var(--texto-suave);
+      font-size: 10px;
+    }
+
+    .form-respuesta {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+      margin-top: 9px;
+    }
+
+    .form-respuesta input {
+      min-width: 130px;
+      padding: 7px 10px;
+      border: 1px solid var(--borde);
+      border-radius: 16px;
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: inherit;
+      font-size: 12px;
+      outline: none;
+    }
+
+    .form-respuesta input:focus {
+      border-color: var(--azul);
+      background: #fff;
+    }
+
+    .r-nombre-input {
+      width: 115px;
+    }
+
+    .r-texto-input {
+      flex: 1;
+    }
+
+    .btn-enviar-respuesta {
+      padding: 7px 13px;
+      border: none;
+      border-radius: 16px;
+      background: var(--azul);
+      color: #fff;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-enviar-respuesta:hover {
+      background: var(--azul-oscuro);
+    }
+
+    .aviso-respuesta {
+      width: 100%;
+      margin: 0;
+      color: var(--peligro);
+      font-size: 12px;
+    }
+
     .oculto {
       display: none;
     }
@@ -603,6 +717,14 @@
       .comentarios {
         margin-left: 0;
       }
+
+      .respuestas {
+        margin-left: 20px;
+      }
+
+      .form-respuesta input {
+        width: 100%;
+      }
     }
     /* Editar y eliminar comentarios - H12 */
 
@@ -625,6 +747,14 @@
 
 .btn-editar-comentario {
   color: var(--azul);
+}
+
+.btn-responder-comentario {
+  color: var(--azul);
+}
+
+.btn-responder-comentario:hover {
+  text-decoration: underline;
 }
 
 .btn-editar-comentario:hover {

@@ -62,6 +62,28 @@ function tiempoRelativo(fecha) {
 }
 
 /**
+ * Muestra la fecha y hora completas de una respuesta (H14).
+ *
+ * @param {string} valorFecha Fecha almacenada en formato ISO.
+ * @returns {string} Fecha y hora local, o una cadena vacía si no es válida.
+ */
+function formatearFechaHora(valorFecha) {
+  const fecha = new Date(valorFecha);
+
+  if (Number.isNaN(fecha.getTime())) {
+    return "";
+  }
+
+  return fecha.toLocaleString("es-CR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+/**
  * Ordena una copia de las publicaciones según un criterio.
  * Nunca modifica el arreglo original.
  *
@@ -166,7 +188,147 @@ function actualizarResumen() {
   }
 }
 
+/**
+ * Crea la representación visual de una respuesta.
+ * Se utiliza textContent para que el contenido del usuario no se interprete
+ * como HTML.
+ *
+ * @param {Object} respuesta Respuesta que se desea mostrar.
+ * @returns {HTMLElement} Elemento de la respuesta.
+ */
+function crearRespuesta(respuesta) {
+  const div = document.createElement("div");
+  div.className = "respuesta";
+
+  const avatar = document.createElement("span");
+  avatar.className = "r-avatar";
+  avatar.textContent = (respuesta.nombre || "?")
+    .trim()
+    .charAt(0)
+    .toUpperCase();
+
+  const cuerpo = document.createElement("div");
+  cuerpo.className = "r-cuerpo";
+
+  const autor = document.createElement("span");
+  autor.className = "r-autor";
+  autor.textContent = respuesta.nombre || "";
+
+  const texto = document.createElement("span");
+  texto.className = "r-texto";
+  texto.textContent = respuesta.texto || "";
+
+  const fecha = document.createElement("span");
+  fecha.className = "r-fecha";
+  fecha.textContent = formatearFechaHora(respuesta.fecha);
+
+  cuerpo.appendChild(autor);
+  cuerpo.appendChild(document.createTextNode(" "));
+  cuerpo.appendChild(texto);
+  cuerpo.appendChild(fecha);
+
+  div.appendChild(avatar);
+  div.appendChild(cuerpo);
+
+  return div;
+}
+
+/**
+ * Crea y valida el formulario para responder un comentario.
+ *
+ * @param {number} postId Identificador de la publicación.
+ * @param {string} comentarioId Identificador del comentario.
+ * @returns {HTMLFormElement} Formulario listo para insertarse.
+ */
+function crearFormularioRespuesta(postId, comentarioId) {
+  const form = document.createElement("form");
+  form.className = "form-respuesta oculto";
+  form.noValidate = true;
+
+  const nombreInput = document.createElement("input");
+  nombreInput.type = "text";
+  nombreInput.className = "r-nombre-input";
+  nombreInput.placeholder = "Tu nombre";
+  nombreInput.maxLength = LIMITE_NOMBRE_RESPUESTA;
+  nombreInput.required = true;
+  nombreInput.autocomplete = "name";
+  nombreInput.setAttribute("aria-label", "Nombre de quien responde");
+
+  const textoInput = document.createElement("input");
+  textoInput.type = "text";
+  textoInput.className = "r-texto-input";
+  textoInput.placeholder = "Escribe una respuesta...";
+  textoInput.maxLength = LIMITE_TEXTO_RESPUESTA;
+  textoInput.required = true;
+  textoInput.setAttribute("aria-label", "Texto de la respuesta");
+
+  const boton = document.createElement("button");
+  boton.type = "submit";
+  boton.className = "btn-enviar-respuesta";
+  boton.textContent = "Enviar";
+
+  const aviso = document.createElement("p");
+  aviso.className = "aviso-respuesta";
+  aviso.setAttribute("aria-live", "polite");
+
+  form.appendChild(nombreInput);
+  form.appendChild(textoInput);
+  form.appendChild(boton);
+  form.appendChild(aviso);
+
+  form.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    aviso.textContent = "";
+
+    const nombre = nombreInput.value.trim();
+    const texto = textoInput.value.trim();
+
+    if (!nombre) {
+      aviso.textContent = "El nombre es obligatorio.";
+      nombreInput.focus();
+      return;
+    }
+
+    if (!texto) {
+      aviso.textContent = "La respuesta es obligatoria.";
+      textoInput.focus();
+      return;
+    }
+
+    if (nombre.length > LIMITE_NOMBRE_RESPUESTA) {
+      aviso.textContent =
+        `El nombre no puede superar los ${LIMITE_NOMBRE_RESPUESTA} caracteres.`;
+      nombreInput.focus();
+      return;
+    }
+
+    if (texto.length > LIMITE_TEXTO_RESPUESTA) {
+      aviso.textContent =
+        `La respuesta no puede superar los ${LIMITE_TEXTO_RESPUESTA} caracteres.`;
+      textoInput.focus();
+      return;
+    }
+
+    const resultado = addReply(postId, comentarioId, {
+      nombre,
+      texto,
+    });
+
+    if (!resultado.ok) {
+      aviso.textContent = resultado.mensaje;
+      return;
+    }
+
+    renderPosts();
+  });
+
+  return form;
+}
+
 function crearComentario(comentario, postId) {
+  const hilo = document.createElement("div");
+  hilo.className = "hilo-comentario";
+
   const div = document.createElement("div");
   div.className = "comentario";
 
@@ -201,6 +363,31 @@ function crearComentario(comentario, postId) {
   // Acciones del comentario
   const acciones = document.createElement("div");
   acciones.className = "c-acciones";
+
+  // Botón Responder (H14)
+  const formularioRespuesta = crearFormularioRespuesta(
+    postId,
+    comentario.id
+  );
+
+  const botonResponder = document.createElement("button");
+  botonResponder.type = "button";
+  botonResponder.className = "btn-responder-comentario";
+  botonResponder.textContent = "Responder";
+  botonResponder.setAttribute("aria-expanded", "false");
+  botonResponder.setAttribute(
+    "aria-label",
+    `Responder al comentario de ${comentario.nombre || "autor desconocido"}`
+  );
+
+  botonResponder.addEventListener("click", function () {
+    const oculto = formularioRespuesta.classList.toggle("oculto");
+    botonResponder.setAttribute("aria-expanded", String(!oculto));
+
+    if (!oculto) {
+      formularioRespuesta.querySelector(".r-nombre-input").focus();
+    }
+  });
 
   // Botón Editar
   const botonEditar = document.createElement("button");
@@ -249,6 +436,7 @@ function crearComentario(comentario, postId) {
     }
   );
 
+  acciones.appendChild(botonResponder);
   acciones.appendChild(botonEditar);
   acciones.appendChild(botonEliminar);
 
@@ -263,7 +451,19 @@ function crearComentario(comentario, postId) {
   div.appendChild(avatar);
   div.appendChild(cuerpo);
 
-  return div;
+  const respuestas = document.createElement("div");
+  respuestas.className = "respuestas";
+
+  (comentario.respuestas || []).forEach((respuesta) => {
+    respuestas.appendChild(crearRespuesta(respuesta));
+  });
+
+  respuestas.appendChild(formularioRespuesta);
+
+  hilo.appendChild(div);
+  hilo.appendChild(respuestas);
+
+  return hilo;
 }
 
 function iniciarEdicionComentario(
