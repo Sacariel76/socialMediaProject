@@ -106,11 +106,13 @@ function generarIdRespuesta() {
  * @returns {string} Identificador único dentro de la aplicación.
  */
 function generarIdRespuestaUnico(idsEnUso) {
-  let id;
+  let id = generarIdRespuesta();
+  let sufijo = 1;
 
-  do {
-    id = generarIdRespuesta();
-  } while (idsEnUso.has(id));
+  while (idsEnUso.has(id)) {
+    id = `${generarIdRespuesta()}-${sufijo}`;
+    sufijo += 1;
+  }
 
   idsEnUso.add(id);
   return id;
