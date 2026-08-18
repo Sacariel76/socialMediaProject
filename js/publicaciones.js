@@ -13,7 +13,18 @@ const REACCIONES = [
 const estadoFeed = {
   busqueda: "",
   orden: "recientes",
+  etiqueta: "todas",
 };
+
+/**
+ * Devuelve el nombre visible de una etiqueta (H15).
+ *
+ * @param {string} etiqueta Etiqueta en minúsculas.
+ * @returns {string} Nombre con mayúscula inicial.
+ */
+function formatearEtiqueta(etiqueta) {
+  return etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1);
+}
 
 /**
  * Lee la cantidad de una reacción de una publicación (H13).
@@ -120,8 +131,9 @@ function ordenarPublicaciones(posts, criterio) {
 }
 
 /**
- * Obtiene las publicaciones visibles aplicando la búsqueda (H8)
- * y el orden (H9) sin modificar el arreglo guardado.
+ * Obtiene las publicaciones visibles aplicando la búsqueda (H8),
+ * el orden (H9) y el filtro por etiqueta (H15) sin modificar
+ * el arreglo guardado.
  *
  * @returns {Array} Copia filtrada y ordenada de las publicaciones.
  */
@@ -129,6 +141,7 @@ function obtenerPostsVisibles() {
   let posts = getPosts();
 
   const busqueda = estadoFeed.busqueda.toLowerCase();
+  const etiquetaFiltro = estadoFeed.etiqueta;
 
   if (busqueda) {
     posts = posts.filter((post) => {
@@ -136,6 +149,12 @@ function obtenerPostsVisibles() {
         (post.nombre || "").toLowerCase().includes(busqueda) ||
         (post.mensaje || "").toLowerCase().includes(busqueda)
       );
+    });
+  }
+
+  if (etiquetaFiltro !== "todas") {
+    posts = posts.filter((post) => {
+      return post.etiqueta === etiquetaFiltro;
     });
   }
 
@@ -687,6 +706,12 @@ function crearPublicacion(post) {
   );
   nombre.textContent = post.nombre;
 
+  // Etiqueta (H15)
+  const etiqueta = document.createElement("span");
+  etiqueta.className = `etiqueta etiqueta-${post.etiqueta}`;
+  etiqueta.textContent = formatearEtiqueta(post.etiqueta);
+  nombre.appendChild(etiqueta);
+
   // Fecha / hora
   const fecha = post.fecha ? new Date(post.fecha) : null;
 
@@ -845,7 +870,7 @@ function renderPosts() {
     if (getPosts().length === 0) {
       li.textContent = "Aún no hay publicaciones. ¡Sé el primero en publicar!";
     } else {
-      li.textContent = "No se encontraron publicaciones para tu búsqueda.";
+      li.textContent = "No se encontraron publicaciones para los criterios seleccionados.";
     }
 
     lista.appendChild(li);

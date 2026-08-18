@@ -7,6 +7,20 @@ const TIPOS_REACCION = ["megusta", "meencanta", "medivierte"];
 const LIMITE_NOMBRE_RESPUESTA = 50;
 const LIMITE_TEXTO_RESPUESTA = 200;
 
+/** Etiquetas disponibles para las publicaciones (H15). */
+const ETIQUETAS = ["general", "estudio", "evento", "ayuda"];
+
+/**
+ * Devuelve una etiqueta válida (H15). Las publicaciones antiguas
+ * sin etiqueta o con un valor desconocido se tratan como General.
+ *
+ * @param {*} valor Etiqueta guardada en LocalStorage.
+ * @returns {string} Etiqueta válida: general, estudio, evento o ayuda.
+ */
+function normalizarEtiqueta(valor) {
+  return ETIQUETAS.includes(valor) ? valor : "general";
+}
+
 /**
  * Convierte cualquier valor en una cantidad válida de reacciones.
  * Los valores ausentes, negativos o no numéricos se tratan como cero.
@@ -58,6 +72,7 @@ function normalizarPost(post) {
 
   return {
     ...base,
+    etiqueta: normalizarEtiqueta(base.etiqueta),
     reacciones,
     likes: reacciones.megusta,
   };
@@ -311,6 +326,11 @@ function getPosts() {
   const postsNormalizados = posts.map((post) => {
     // Completa las reacciones de la publicación (H13).
     const normalizado = normalizarPost(post);
+
+    // Completa la etiqueta de las publicaciones antiguas (H15).
+    if (normalizado.etiqueta !== post?.etiqueta) {
+      huboCambios = true;
+    }
 
     if (!Array.isArray(normalizado.comentarios)) {
       return normalizado;

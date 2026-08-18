@@ -193,6 +193,25 @@ Pruebas mínimas
 
 Restricción técnica: Cada respuesta posee un `id` único y su propio arreglo `respuestas`. La publicación y el elemento padre —comentario o respuesta— se localizan por `id`, sin utilizar posiciones visuales ni texto como identificador.
 
+### H15. Etiquetas y filtro por tema (3 puntos)
+Como estudiante, quiero asignar un tema a mi publicación para organizar y encontrar contenido relacionado.
+
+Criterios de aceptación
+- Al publicar se puede seleccionar una etiqueta: General, Estudio, Evento o Ayuda.
+- Cada publicación muestra visualmente su etiqueta.
+- Existe un filtro para ver Todas o una etiqueta específica.
+- El filtro funciona junto con la búsqueda y el ordenamiento.
+- Las publicaciones antiguas sin etiqueta aparecen como General.
+- La etiqueta permanece después de recargar la página.
+
+Pruebas mínimas
+- Crear al menos dos publicaciones de cada etiqueta y probar todos los filtros.
+- Filtrar y luego buscar una palabra que solo aparezca en una publicación.
+- Cambiar repetidamente entre Todas y una etiqueta; no deben perderse datos.
+- Cargar publicaciones antiguas sin etiqueta y comprobar que aparecen como General.
+
+Restricción técnica: Guardar la etiqueta dentro del objeto de la publicación. Filtrar solamente cambia lo que se muestra; no debe borrar ni sobrescribir el arreglo original.
+
 ## 5. Pruebas de regresión obligatorias
 
 | N.º | Prueba | Resultado esperado | Estado |
@@ -225,6 +244,8 @@ Antes de llamar al docente o declarar una historia terminada, el equipo debe com
 | H10 | 2 | | Resumen de actividad de la red social. □ Pasa  □ Falla | |
 | H11 | 2 | | Límite de 200 caracteres al crear y editar. □ Pasa  □ Falla | |
 | H13 | 5 | | Reacciones múltiples (Me gusta, Me encanta, Me divierte). □ Pasa  □ Falla | |
+| H14 | 5 | | Responder comentarios. □ Pasa  □ Falla | |
+| H15 | 3 | | Etiquetas y filtro por tema. □ Pasa  □ Falla | |
 
 ### Errores importantes encontrados y corregidos:
 ________________________________________________________________________________
@@ -274,6 +295,7 @@ Verificación realizada sobre el código actual (rama `main`) revisando los crit
 | H10 Resumen | 2 | ✔ Implementada / cumple criterios | Tarjeta de resumen con total de publicaciones, Me gusta y comentarios; se actualiza tras publicar, editar, eliminar, comentar o reaccionar (se recalcula en `renderPosts`); con LocalStorage vacío muestra 0; calcula todo desde el arreglo sin contadores duplicados. |
 | H13 Reacciones múltiples | 5 | ✔ Implementada / cumple criterios | Cada publicación tiene tres botones (👍 Me gusta, ❤️ Me encanta, 😄 Me divierte) y una fila de contadores separados por tipo. `incrementReaction(postId, tipo)` (storage.js) aumenta solo el tipo indicado de la publicación buscada por `id`, sin tocar las demás. Los datos viven en `post.reacciones = { megusta, meencanta, medivierte }` dentro del objeto de la publicación; `normalizarPost` asigna cero a las propiedades faltantes y convierte el `likes` de las publicaciones antiguas en `megusta`, por lo que los datos previos no rompen la aplicación. `likes` se mantiene sincronizado con `megusta` para no alterar H9 (Más gustadas) ni H10. El resumen muestra los totales de los tres tipos. |
 | H14 Responder comentarios | 5 | ✔ Implementada / cumple criterios | Cada comentario y cada respuesta permiten desplegar un formulario con nombre y texto obligatorios. `addReply(postId, elementoPadreId, respuesta)` recorre el árbol por `id`, asigna un identificador único y guarda la respuesta bajo el padre correcto. El renderizado y la normalización son recursivos, por lo que se admiten conversaciones de varios niveles y datos antiguos sin `respuestas`. También se controlan referencias inexistentes y errores de escritura. |
+| H15 Etiquetas y filtro por tema | 3 | ✔ Implementada / cumple criterios | Selector de etiqueta (General, Estudio, Evento, Ayuda) en el compositor; la etiqueta se guarda dentro del objeto de la publicación (`post.etiqueta`, app.js) y persiste en LocalStorage. Cada publicación muestra su etiqueta como insignia de color (`crearPublicacion`). Los botones de filtro (Todas/General/Estudio/Evento/Ayuda) cambian solo `estadoFeed.etiqueta`; `obtenerPostsVisibles` filtra sobre una copia y después ordena, por lo que el filtro se combina con la búsqueda (H8) y el orden (H9) sin borrar ni sobrescribir el arreglo guardado. Las publicaciones antiguas sin etiqueta se normalizan a `general` mediante `normalizarEtiqueta` en `getPosts` (H15), y la migración se persiste una sola vez. |
 | H11 | 2 | ✔ Implementada / cumple criterios | Constante compartida `LIMITE_MENSAJE = 200` (publicaciones.js), `maxlength="200"` en el formulario de creación y en la edición, contador "Quedan N caracteres" en el compositor que se actualiza al escribir y vuelve a 200 al publicar, validación al crear y al guardar una edición (no permite superar el límite), resto de funciones sin cambios. |
 
 ### Funciones de la versión base (conservadas)
@@ -291,6 +313,16 @@ Verificación realizada sobre el código actual (rama `main`) revisando los crit
 | Iniciar con datos antiguos sin las propiedades nuevas | La aplicación inicia sin errores; `likes` antiguo se muestra como Me gusta y el resto en cero. |
 | Buscar u ordenar y luego reaccionar | Se actualiza la publicación correcta (los manejadores usan `post.id`). |
 | LocalStorage vacío o con datos corruptos | Muestra el mensaje de lista vacía; `getPosts` devuelve `[]`. |
+
+### Pruebas mínimas de H15 ejecutadas (automatizadas con Node)
+| Prueba | Resultado |
+| --- | --- |
+| Crear publicaciones de cada etiqueta y filtrar | Cada filtro muestra solo las publicaciones con esa etiqueta; Todas muestra el total. |
+| Filtrar y luego buscar una palabra de una sola publicación | Solo queda la publicación que coincide con la etiqueta y la palabra. |
+| Cambiar repetidamente entre Todas y una etiqueta | El arreglo guardado conserva su longitud y sus datos. |
+| Cargar publicaciones antiguas sin etiqueta | Aparecen como General (`normalizarEtiqueta`) y la migración se persiste. |
+| Filtro + orden | El orden (recientes/antiguas/más gustadas) se aplica sobre el subconjunto filtrado. |
+| Etiqueta después de recargar | La etiqueta viaja dentro del objeto guardado en LocalStorage. |
 
 ### Pruebas mínimas de H5 ejecutables en el código
 - Cancelar confirmación conserva la publicación: cubierto por la salida temprana en el manejador de Eliminar.

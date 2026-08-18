@@ -21,6 +21,8 @@ document.addEventListener("DOMContentLoaded", function () {
 
   const buscar = document.getElementById("buscar");
   const selectorOrden = document.getElementById("orden-publicaciones");
+  const selectorEtiqueta = document.getElementById("etiqueta-publicacion");
+  const botonesFiltro = document.querySelectorAll(".filtro-etiqueta");
 
   buscar.addEventListener("input", function () {
     estadoFeed.busqueda = buscar.value.trim();
@@ -30,6 +32,18 @@ document.addEventListener("DOMContentLoaded", function () {
   selectorOrden.addEventListener("change", function () {
     estadoFeed.orden = selectorOrden.value;
     renderPosts();
+  });
+
+  botonesFiltro.forEach(function (boton) {
+    boton.addEventListener("click", function () {
+      estadoFeed.etiqueta = boton.dataset.etiqueta;
+
+      botonesFiltro.forEach(function (otro) {
+        otro.classList.toggle("activo", otro === boton);
+      });
+
+      renderPosts();
+    });
   });
 
   mensaje.addEventListener("input", actualizarContadorCaracteres);
@@ -69,6 +83,7 @@ document.addEventListener("DOMContentLoaded", function () {
       id: Date.now(),
       nombre: nombreTexto,
       mensaje: mensajeTexto,
+      etiqueta: selectorEtiqueta.value,
       likes: 0,
       reacciones: {
         megusta: 0,
