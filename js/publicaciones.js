@@ -1,5 +1,15 @@
 const LIMITE_MENSAJE = 200;
 
+/** Cantidad máxima de publicaciones que se muestran por página (H18). */
+const PUBLICACIONES_POR_PAGINA = 5;
+
+/** Motivos de reporte con su nombre visible (H20). */
+const MOTIVOS = [
+  { valor: "spam", texto: "Spam" },
+  { valor: "ofensivo", texto: "Ofensivo" },
+  { valor: "otro", texto: "Otro" },
+];
+
 /**
  * Reacciones disponibles (H13) con su icono, etiqueta y el id
  * del contador que les corresponde en el resumen de actividad.
@@ -15,6 +25,7 @@ const estadoFeed = {
   orden: "recientes",
   etiqueta: "todas",
   soloFavoritas: false,
+  pagina: 1,
 };
 
 /**
@@ -25,6 +36,30 @@ const estadoFeed = {
  */
 function formatearEtiqueta(etiqueta) {
   return etiqueta.charAt(0).toUpperCase() + etiqueta.slice(1);
+}
+
+/**
+ * Devuelve el nombre visible de un motivo de reporte (H20).
+ *
+ * @param {string} motivo Motivo guardado: spam, ofensivo u otro.
+ * @returns {string} Nombre con mayúscula inicial.
+ */
+function formatearMotivo(motivo) {
+  const encontrado = MOTIVOS.find((opcion) => opcion.valor === motivo);
+
+  return encontrado ? encontrado.texto : formatearEtiqueta(motivo || "otro");
+}
+
+/**
+ * Acorta un mensaje para mostrarlo en la vista Moderación (H20).
+ *
+ * @param {string} mensaje Mensaje completo de la publicación.
+ * @returns {string} Mensaje recortado.
+ */
+function resumirMensaje(mensaje) {
+  const texto = String(mensaje || "");
+
+  return texto.length > 120 ? `${texto.slice(0, 120)}…` : texto;
 }
 
 /**
@@ -164,6 +199,63 @@ function obtenerPostsVisibles() {
   }
 
   return ordenarPublicaciones(posts, estadoFeed.orden);
+}
+
+/**
+ * Calcula la porción de publicaciones que corresponde mostrar (H18).
+ * Ajusta la página actual cuando queda fuera de rango, por ejemplo al
+ * eliminar la última publicación de una página o al buscar, filtrar u
+ * ordenar desde una página avanzada.
+ *
+ * @param {number} total Cantidad de publicaciones visibles.
+ * @returns {{ totalPaginas: number, pagina: number, inicio: number, fin: number }}
+ */
+function calcularPaginacion(total) {
+  const totalPaginas = Math.max(
+    1,
+    Math.ceil(total / PUBLICACIONES_POR_PAGINA)
+  );
+
+  const pagina = Math.min(
+    Math.max(1, estadoFeed.pagina),
+    totalPaginas
+  );
+
+  estadoFeed.pagina = pagina;
+
+  const inicio = (pagina - 1) * PUBLICACIONES_POR_PAGINA;
+
+  return {
+    totalPaginas,
+    pagina,
+    inicio,
+    fin: inicio + PUBLICACIONES_POR_PAGINA,
+  };
+}
+
+/**
+ * Actualiza el indicador y los botones de paginación (H18).
+ *
+ * @param {number} pagina Página que se está mostrando.
+ * @param {number} totalPaginas Cantidad total de páginas.
+ * @param {number} totalVisibles Publicaciones que cumplen los filtros.
+ */
+function renderPaginacion(pagina, totalPaginas, totalVisibles) {
+  const barra = document.getElementById("paginacion");
+  const anterior = document.getElementById("pagina-anterior");
+  const siguiente = document.getElementById("pagina-siguiente");
+  const indicador = document.getElementById("indicador-pagina");
+
+  if (!barra || !anterior || !siguiente || !indicador) {
+    return;
+  }
+
+  barra.classList.toggle("oculto", totalVisibles === 0);
+
+  indicador.textContent = `Página ${pagina} de ${totalPaginas}`;
+
+  anterior.disabled = pagina <= 1;
+  siguiente.disabled = pagina >= totalPaginas;
 }
 
 /**
@@ -698,6 +790,216 @@ function crearFormularioComentario(post) {
   return form;
 }
 
+/**
+ * Crea el panel que permite elegir el motivo de un reporte (H20).
+ * Cancelar cierra el panel sin guardar nada y el botón Confirmar se
+ * deshabilita mientras se registra, para que la misma acción no se
+ * guarde dos veces.
+ *
+ * @param {Object} post Publicación que se desea reportar.
+ * @returns {HTMLFormElement} Panel listo para insertarse.
+ */
+function crearPanelReporte(post) {
+  const panel = document.createElement("form");
+  panel.className = "panel-reporte oculto";
+  panel.noValidate = true;
+
+  const titulo = document.createElement("span");
+  titulo.className = "panel-reporte-titulo";
+  titulo.textContent = "Motivo del reporte:";
+
+  const select = document.createElement("select");
+  select.className = "motivo-select";
+  select.setAttribute(
+    "aria-label",
+    `Motivo del reporte para la publicación de ${post.nombre}`
+  );
+
+  MOTIVOS.forEach((motivo) => {
+    const opcion = document.createElement("option");
+    opcion.value = motivo.valor;
+    opcion.textContent = motivo.texto;
+    select.appendChild(opcion);
+  });
+
+  const botonConfirmar = document.createElement("button");
+  botonConfirmar.type = "submit";
+  botonConfirmar.className = "btn-confirmar-reporte";
+  botonConfirmar.textContent = "Confirmar reporte";
+
+  const botonCancelar = document.createElement("button");
+  botonCancelar.type = "button";
+  botonCancelar.className = "btn-cancelar-reporte";
+  botonCancelar.textContent = "Cancelar";
+
+  const aviso = document.createElement("p");
+  aviso.className = "aviso-reporte";
+  aviso.setAttribute("aria-live", "polite");
+
+  panel.appendChild(titulo);
+  panel.appendChild(select);
+  panel.appendChild(botonConfirmar);
+  panel.appendChild(botonCancelar);
+  panel.appendChild(aviso);
+
+  botonCancelar.addEventListener("click", function () {
+    // Cancelar antes de confirmar no registra ningún reporte.
+    panel.classList.add("oculto");
+    aviso.textContent = "";
+  });
+
+  panel.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    aviso.textContent = "";
+
+    if (botonConfirmar.disabled) {
+      return;
+    }
+
+    botonConfirmar.disabled = true;
+
+    const resultado = reportPost(post.id, select.value);
+
+    if (!resultado.ok) {
+      aviso.textContent = resultado.mensaje;
+      botonConfirmar.disabled = false;
+      return;
+    }
+
+    if (resultado.duplicado) {
+      aviso.textContent =
+        "Esta publicación ya tiene un reporte con ese motivo.";
+      botonConfirmar.disabled = false;
+      return;
+    }
+
+    renderPosts();
+  });
+
+  return panel;
+}
+
+/**
+ * Crea la fila de una publicación reportada dentro de Moderación (H20).
+ * Las acciones utilizan el id de la publicación, nunca su posición.
+ *
+ * @param {Object} post Publicación con al menos un reporte.
+ * @returns {HTMLLIElement} Elemento de la lista de moderación.
+ */
+function crearItemModeracion(post) {
+  const item = document.createElement("li");
+  item.className = "item-moderacion";
+
+  const autor = document.createElement("span");
+  autor.className = "moderacion-autor";
+  autor.textContent = post.nombre || "";
+
+  const mensaje = document.createElement("p");
+  mensaje.className = "moderacion-mensaje";
+  mensaje.textContent = resumirMensaje(post.mensaje);
+
+  const motivos = document.createElement("div");
+  motivos.className = "moderacion-motivos";
+
+  (post.reportes || []).forEach((reporte) => {
+    const motivo = document.createElement("span");
+    motivo.className = `motivo-reporte motivo-${reporte.motivo}`;
+    motivo.textContent = formatearMotivo(reporte.motivo);
+
+    const fecha = formatearFechaHora(reporte.fecha);
+
+    if (fecha) {
+      motivo.title = `Reportada el ${fecha}`;
+    }
+
+    motivos.appendChild(motivo);
+  });
+
+  const acciones = document.createElement("div");
+  acciones.className = "moderacion-acciones";
+
+  const botonDescartar = document.createElement("button");
+  botonDescartar.type = "button";
+  botonDescartar.className = "btn-descartar-reporte";
+  botonDescartar.textContent = "Descartar reporte";
+
+  botonDescartar.addEventListener("click", function () {
+    const resultado = dismissReports(post.id);
+
+    if (!resultado.ok) {
+      window.alert(resultado.mensaje);
+      return;
+    }
+
+    renderPosts();
+  });
+
+  const botonEliminar = document.createElement("button");
+  botonEliminar.type = "button";
+  botonEliminar.className = "btn-eliminar-reportada";
+  botonEliminar.textContent = "Eliminar publicación";
+
+  botonEliminar.addEventListener("click", function () {
+    const confirmar = window.confirm(
+      `¿Está seguro de que desea eliminar la publicación de ${post.nombre}?`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    deletePost(post.id);
+
+    renderPosts();
+  });
+
+  acciones.appendChild(botonDescartar);
+  acciones.appendChild(botonEliminar);
+
+  item.appendChild(autor);
+  item.appendChild(mensaje);
+  item.appendChild(motivos);
+  item.appendChild(acciones);
+
+  return item;
+}
+
+/**
+ * Dibuja la vista Moderación con las publicaciones reportadas (H20).
+ * Las publicaciones siguen visibles en el feed; aquí solo se listan
+ * para revisarlas.
+ */
+function renderModeracion() {
+  const lista = document.getElementById("lista-moderacion");
+  const boton = document.getElementById("ver-moderacion");
+
+  if (!lista) {
+    return;
+  }
+
+  const reportadas = getPosts().filter(
+    (post) => (post.reportes || []).length > 0
+  );
+
+  if (boton) {
+    boton.textContent = `⚑ Moderación (${reportadas.length})`;
+  }
+
+  lista.innerHTML = "";
+
+  if (reportadas.length === 0) {
+    const vacio = document.createElement("li");
+    vacio.className = "moderacion-vacio";
+    vacio.textContent = "No hay publicaciones reportadas.";
+    lista.appendChild(vacio);
+    return;
+  }
+
+  reportadas.forEach((post) => {
+    lista.appendChild(crearItemModeracion(post));
+  });
+}
+
 function crearPublicacion(post) {
   const li = document.createElement("li");
   li.className = post.favorita
@@ -718,6 +1020,17 @@ function crearPublicacion(post) {
   etiqueta.className = `etiqueta etiqueta-${post.etiqueta}`;
   etiqueta.textContent = formatearEtiqueta(post.etiqueta);
   nombre.appendChild(etiqueta);
+
+  // Aviso de contenido reportado (H20). La publicación sigue visible.
+  if ((post.reportes || []).length > 0) {
+    const insignia = document.createElement("span");
+    insignia.className = "insignia-reportada";
+    insignia.textContent = "⚑ Reportada";
+    insignia.title = post.reportes
+      .map((reporte) => formatearMotivo(reporte.motivo))
+      .join(", ");
+    nombre.appendChild(insignia);
+  }
 
   // Fecha / hora
   const fecha = post.fecha ? new Date(post.fecha) : null;
@@ -845,6 +1158,28 @@ function crearPublicacion(post) {
     renderPosts();
   });
 
+  // Botón Reportar (H20)
+  const panelReporte = crearPanelReporte(post);
+
+  const botonReportar = document.createElement("button");
+  botonReportar.type = "button";
+  botonReportar.className = "btn-reportar";
+  botonReportar.textContent = "⚑ Reportar";
+  botonReportar.setAttribute("aria-expanded", "false");
+  botonReportar.setAttribute(
+    "aria-label",
+    `Reportar la publicación de ${post.nombre}`
+  );
+
+  botonReportar.addEventListener("click", function () {
+    const oculto = panelReporte.classList.toggle("oculto");
+    botonReportar.setAttribute("aria-expanded", String(!oculto));
+
+    if (!oculto) {
+      panelReporte.querySelector(".motivo-select").focus();
+    }
+  });
+
   // Botón Editar
   const botonEditar = document.createElement("button");
   botonEditar.type = "button";
@@ -878,6 +1213,7 @@ function crearPublicacion(post) {
   // Agregar botones
   botones.appendChild(botonComentar);
   botones.appendChild(botonFavorito);
+  botones.appendChild(botonReportar);
   botones.appendChild(botonEditar);
   botones.appendChild(botonEliminar);
 
@@ -885,6 +1221,7 @@ function crearPublicacion(post) {
   acciones.appendChild(contadores);
   acciones.appendChild(botonesReaccion);
   acciones.appendChild(botones);
+  acciones.appendChild(panelReporte);
 
   // Agregar elementos a la publicación
   li.appendChild(nombre);
@@ -902,6 +1239,16 @@ function renderPosts() {
 
   const posts = obtenerPostsVisibles();
 
+  // La paginación (H18) solo recorta lo que se dibuja: el arreglo
+  // guardado nunca se divide ni se vuelve a escribir.
+  const paginacion = calcularPaginacion(posts.length);
+
+  renderPaginacion(
+    paginacion.pagina,
+    paginacion.totalPaginas,
+    posts.length
+  );
+
   if (posts.length === 0) {
     const li = document.createElement("li");
     li.className = "vacio";
@@ -914,14 +1261,18 @@ function renderPosts() {
 
     lista.appendChild(li);
     actualizarResumen();
+    renderModeracion();
     return;
   }
 
-  posts.forEach((post) => {
-    lista.appendChild(crearPublicacion(post));
-  });
+  posts
+    .slice(paginacion.inicio, paginacion.fin)
+    .forEach((post) => {
+      lista.appendChild(crearPublicacion(post));
+    });
 
   actualizarResumen();
+  renderModeracion();
 }
 
 /**
