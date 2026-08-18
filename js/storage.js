@@ -11,6 +11,12 @@ const LIMITE_TEXTO_RESPUESTA = 200;
 /** Etiquetas disponibles para las publicaciones (H15). */
 const ETIQUETAS = ["general", "estudio", "evento", "ayuda"];
 
+/** Motivos admitidos al reportar una publicación (H20). */
+const MOTIVOS_REPORTE = ["spam", "ofensivo", "otro"];
+
+/** Versión del archivo de respaldo (H19). */
+const VERSION_RESPALDO = 1;
+
 /**
  * Devuelve una etiqueta válida (H15). Las publicaciones antiguas
  * sin etiqueta o con un valor desconocido se tratan como General.
@@ -20,6 +26,56 @@ const ETIQUETAS = ["general", "estudio", "evento", "ayuda"];
  */
 function normalizarEtiqueta(valor) {
   return ETIQUETAS.includes(valor) ? valor : "general";
+}
+
+/**
+ * Devuelve la lista de reportes válidos de una publicación (H20).
+ * Las publicaciones anteriores a esta historia, o cuyos datos estén
+ * dañados, se tratan como una lista vacía para que la aplicación no falle.
+ *
+ * @param {*} valor Reportes guardados en LocalStorage.
+ * @returns {Array} Reportes con id, motivo y fecha.
+ */
+function normalizarReportes(valor) {
+  if (!Array.isArray(valor)) {
+    return [];
+  }
+
+  const motivosRegistrados = new Set();
+
+  return valor.reduce((reportes, reporte) => {
+    if (!reporte || typeof reporte !== "object") {
+      return reportes;
+    }
+
+    const motivo = String(reporte.motivo || "").toLowerCase();
+
+    // Un mismo motivo no se guarda dos veces en la misma publicación.
+    if (
+      !MOTIVOS_REPORTE.includes(motivo) ||
+      motivosRegistrados.has(motivo)
+    ) {
+      return reportes;
+    }
+
+    motivosRegistrados.add(motivo);
+
+    reportes.push({
+      id:
+        reporte.id !== undefined &&
+        reporte.id !== null &&
+        reporte.id !== ""
+          ? reporte.id
+          : generarIdComentario(),
+      motivo,
+      fecha:
+        typeof reporte.fecha === "string" && reporte.fecha
+          ? reporte.fecha
+          : new Date().toISOString(),
+    });
+
+    return reportes;
+  }, []);
 }
 
 /**
@@ -75,6 +131,7 @@ function normalizarPost(post) {
     ...base,
     etiqueta: normalizarEtiqueta(base.etiqueta),
     favorita: base.favorita === true,
+    reportes: normalizarReportes(base.reportes),
     reacciones,
     likes: reacciones.megusta,
   };
@@ -336,6 +393,16 @@ function getPosts() {
 
     // Las publicaciones anteriores a H16 se consideran no favoritas.
     if (normalizado.favorita !== post?.favorita) {
+      huboCambios = true;
+    }
+
+    // Los reportes se comparan por estructura y no por referencia (H20):
+    // un arreglo nuevo nunca es idéntico al guardado y la migración se
+    // repetiría en cada carga.
+    if (
+      !Array.isArray(post?.reportes) ||
+      post.reportes.length !== normalizado.reportes.length
+    ) {
       huboCambios = true;
     }
 
@@ -888,4 +955,282 @@ function deletePost(postId) {
   );
 
   savePosts(postsActualizados);
+}
+
+/**
+ * Registra un reporte en la publicación indicada (H20).
+ * La publicación se localiza por su id y nunca por su posición en pantalla.
+ * Un mismo motivo no se guarda dos veces en la misma publicación.
+ *
+ * @param {number|string} postId Identificador de la publicación.
+ * @param {string} motivo Motivo elegido: spam, ofensivo u otro.
+ * @returns {{ ok: boolean, duplicado?: boolean, mensaje?: string }} Resultado.
+ */
+function reportPost(postId, motivo) {
+  const motivoNormalizado = String(motivo || "").toLowerCase();
+
+  if (!MOTIVOS_REPORTE.includes(motivoNormalizado)) {
+    return {
+      ok: false,
+      mensaje: "Selecciona un motivo válido para el reporte.",
+    };
+  }
+
+  const posts = getPosts();
+  let encontrada = false;
+  let duplicado = false;
+
+  const postsActualizados = posts.map((post) => {
+    if (post.id !== postId) {
+      return post;
+    }
+
+    encontrada = true;
+
+    const reportes = post.reportes || [];
+
+    if (
+      reportes.some((reporte) => reporte.motivo === motivoNormalizado)
+    ) {
+      duplicado = true;
+      return post;
+    }
+
+    return {
+      ...post,
+      reportes: [
+        ...reportes,
+        {
+          id: generarIdComentario(),
+          motivo: motivoNormalizado,
+          fecha: new Date().toISOString(),
+        },
+      ],
+    };
+  });
+
+  if (!encontrada) {
+    return {
+      ok: false,
+      mensaje: "La publicación seleccionada ya no existe.",
+    };
+  }
+
+  if (duplicado) {
+    return {
+      ok: true,
+      duplicado: true,
+    };
+  }
+
+  try {
+    savePosts(postsActualizados);
+  } catch (error) {
+    console.error("No fue posible guardar el reporte:", error);
+
+    return {
+      ok: false,
+      mensaje: "No fue posible guardar el reporte. Inténtalo nuevamente.",
+    };
+  }
+
+  return {
+    ok: true,
+    duplicado: false,
+  };
+}
+
+/**
+ * Descarta los reportes de una publicación sin eliminarla (H20).
+ *
+ * @param {number|string} postId Identificador de la publicación.
+ * @returns {{ ok: boolean, mensaje?: string }} Resultado de la operación.
+ */
+function dismissReports(postId) {
+  const posts = getPosts();
+  let encontrada = false;
+
+  const postsActualizados = posts.map((post) => {
+    if (post.id !== postId) {
+      return post;
+    }
+
+    encontrada = true;
+
+    return {
+      ...post,
+      reportes: [],
+    };
+  });
+
+  if (!encontrada) {
+    return {
+      ok: false,
+      mensaje: "La publicación seleccionada ya no existe.",
+    };
+  }
+
+  try {
+    savePosts(postsActualizados);
+  } catch (error) {
+    console.error("No fue posible descartar el reporte:", error);
+
+    return {
+      ok: false,
+      mensaje: "No fue posible descartar el reporte. Inténtalo nuevamente.",
+    };
+  }
+
+  return {
+    ok: true,
+  };
+}
+
+/**
+ * Construye el contenido del archivo de respaldo (H19).
+ * Se exportan las publicaciones ya normalizadas con todos sus datos
+ * relacionados: comentarios, respuestas, reacciones, etiqueta, favorita
+ * y reportes.
+ *
+ * @returns {Object} Respaldo con versión, fecha y publicaciones.
+ */
+function construirRespaldo() {
+  return {
+    version: VERSION_RESPALDO,
+    exportado: new Date().toISOString(),
+    publicaciones: getPosts(),
+  };
+}
+
+/**
+ * Comprueba que un id de publicación sea utilizable (H19).
+ *
+ * @param {*} id Identificador leído del archivo.
+ * @returns {boolean} true si el id permite localizar la publicación.
+ */
+function esIdValido(id) {
+  if (typeof id === "number") {
+    return Number.isFinite(id);
+  }
+
+  return typeof id === "string" && id.trim() !== "";
+}
+
+/**
+ * Valida la estructura de un respaldo antes de escribir en LocalStorage (H19).
+ * Acepta tanto el objeto con metadatos como un arreglo suelto de
+ * publicaciones, de modo que los respaldos de versiones anteriores siguen
+ * siendo válidos. Las propiedades opcionales que falten las completa
+ * después la normalización de getPosts.
+ *
+ * @param {*} datos Contenido ya convertido con JSON.parse.
+ * @returns {{ ok: boolean, publicaciones?: Array, mensaje?: string }} Resultado.
+ */
+function validarRespaldo(datos) {
+  let publicaciones;
+
+  if (Array.isArray(datos)) {
+    publicaciones = datos;
+  } else if (
+    datos &&
+    typeof datos === "object" &&
+    Array.isArray(datos.publicaciones)
+  ) {
+    publicaciones = datos.publicaciones;
+  } else {
+    return {
+      ok: false,
+      mensaje: "El archivo no tiene la estructura de un respaldo.",
+    };
+  }
+
+  const idsEnUso = new Set();
+
+  for (let indice = 0; indice < publicaciones.length; indice += 1) {
+    const post = publicaciones[indice];
+    const posicion = indice + 1;
+
+    if (!post || typeof post !== "object" || Array.isArray(post)) {
+      return {
+        ok: false,
+        mensaje: `La publicación ${posicion} del archivo no es válida.`,
+      };
+    }
+
+    if (!esIdValido(post.id)) {
+      return {
+        ok: false,
+        mensaje: `La publicación ${posicion} del archivo no tiene un id válido.`,
+      };
+    }
+
+    if (idsEnUso.has(post.id)) {
+      return {
+        ok: false,
+        mensaje: `El archivo repite el id ${post.id} en más de una publicación.`,
+      };
+    }
+
+    idsEnUso.add(post.id);
+
+    if (
+      typeof post.nombre !== "string" ||
+      typeof post.mensaje !== "string"
+    ) {
+      return {
+        ok: false,
+        mensaje: `La publicación ${posicion} del archivo no tiene nombre y mensaje de texto.`,
+      };
+    }
+
+    if (
+      post.comentarios !== undefined &&
+      !Array.isArray(post.comentarios)
+    ) {
+      return {
+        ok: false,
+        mensaje: `Los comentarios de la publicación ${posicion} no son válidos.`,
+      };
+    }
+  }
+
+  return {
+    ok: true,
+    publicaciones,
+  };
+}
+
+/**
+ * Reemplaza las publicaciones guardadas por las de un respaldo válido (H19).
+ * Solo debe llamarse con el resultado de validarRespaldo, de modo que la
+ * validación termina antes de escribir. El contenido del archivo nunca se
+ * ejecuta: únicamente se leen sus propiedades.
+ *
+ * @param {Array} publicaciones Publicaciones ya validadas.
+ * @returns {{ ok: boolean, total?: number, mensaje?: string }} Resultado.
+ */
+function importarRespaldo(publicaciones) {
+  if (!Array.isArray(publicaciones)) {
+    return {
+      ok: false,
+      mensaje: "El respaldo no contiene una lista de publicaciones.",
+    };
+  }
+
+  try {
+    savePosts(publicaciones);
+  } catch (error) {
+    console.error("No fue posible importar el respaldo:", error);
+
+    return {
+      ok: false,
+      mensaje:
+        "No fue posible guardar el respaldo. Los datos actuales se conservan.",
+    };
+  }
+
+  return {
+    ok: true,
+    total: publicaciones.length,
+  };
 }

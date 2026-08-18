@@ -233,6 +233,45 @@ Como estudiante, quiero recuperar el texto que estaba escribiendo para no perder
 
 Restricción técnica: El borrador utiliza la clave `borrador-publicacion`, separada de `publicaciones`, y contiene únicamente `nombre` y `mensaje`.
 
+### H18. Paginación de publicaciones (5 puntos)
+Como estudiante, quiero ver las publicaciones por páginas para navegar cómodamente cuando existe mucho contenido.
+
+Criterios de aceptación
+- Se muestran como máximo cinco publicaciones por página.
+- Existen controles Anterior y Siguiente y un indicador de página actual.
+- Anterior se desactiva en la primera página y Siguiente en la última.
+- Buscar, filtrar u ordenar recalcula correctamente la cantidad de páginas.
+- Si se elimina la última publicación de una página, la vista pasa a una página válida.
+- Cambiar de página no modifica ni duplica datos.
+
+Restricción técnica: La paginación afecta únicamente la porción renderizada. No dividir ni guardar el arreglo original en varias claves.
+
+### H19. Exportar e importar respaldo (5 puntos)
+Como estudiante, quiero descargar y restaurar un respaldo para proteger la información de la red social.
+
+Criterios de aceptación
+- Una acción Exportar descarga un archivo JSON con todas las publicaciones y sus datos relacionados.
+- Una acción Importar permite seleccionar un archivo JSON.
+- Antes de reemplazar los datos actuales, la aplicación solicita confirmación.
+- Un archivo válido restaura publicaciones, comentarios, respuestas, reacciones y demás propiedades existentes.
+- Un archivo inválido muestra un mensaje y conserva los datos actuales.
+- Después de importar, la interfaz se actualiza y los datos permanecen al recargar.
+
+Restricción técnica: Validar la estructura antes de escribir en LocalStorage. No ejecutar contenido del archivo ni reemplazar los datos hasta terminar toda la validación.
+
+### H20. Reportar y moderar contenido (5 puntos)
+Como estudiante, quiero reportar una publicación inapropiada para que pueda revisarse sin eliminarla inmediatamente.
+
+Criterios de aceptación
+- Cada publicación permite seleccionar Reportar y elegir un motivo: Spam, Ofensivo u Otro.
+- Un mismo reporte no se registra dos veces durante la misma acción.
+- La publicación muestra que fue reportada, pero continúa visible para los usuarios.
+- Existe una vista Moderación que lista publicaciones reportadas y su motivo.
+- Desde Moderación se puede descartar el reporte o eliminar la publicación con confirmación.
+- Los reportes permanecen después de recargar y no afectan otras publicaciones.
+
+Restricción técnica: Almacenar el estado del reporte dentro de la publicación o en una estructura relacionada por id. Nunca identificar una publicación por su posición en pantalla.
+
 ## 5. Pruebas de regresión obligatorias
 
 | N.º | Prueba | Resultado esperado | Estado |
@@ -267,6 +306,9 @@ Antes de llamar al docente o declarar una historia terminada, el equipo debe com
 | H13 | 5 | | Reacciones múltiples (Me gusta, Me encanta, Me divierte). □ Pasa  □ Falla | |
 | H14 | 5 | | Responder comentarios. □ Pasa  □ Falla | |
 | H15 | 3 | | Etiquetas y filtro por tema. □ Pasa  □ Falla | |
+| H18 | 5 | | Paginación de publicaciones. ☑ Pasa  □ Falla | |
+| H19 | 5 | | Exportar e importar respaldo. ☑ Pasa  □ Falla | |
+| H20 | 5 | | Reportar y moderar contenido. ☑ Pasa  □ Falla | |
 
 ### Errores importantes encontrados y corregidos:
 ________________________________________________________________________________
@@ -319,6 +361,9 @@ Verificación realizada sobre el código actual (rama `main`) revisando los crit
 | H15 Etiquetas y filtro por tema | 3 | ✔ Implementada / cumple criterios | Selector de etiqueta (General, Estudio, Evento, Ayuda) en el compositor; la etiqueta se guarda dentro del objeto de la publicación (`post.etiqueta`, app.js) y persiste en LocalStorage. Cada publicación muestra su etiqueta como insignia de color (`crearPublicacion`). Los botones de filtro (Todas/General/Estudio/Evento/Ayuda) cambian solo `estadoFeed.etiqueta`; `obtenerPostsVisibles` filtra sobre una copia y después ordena, por lo que el filtro se combina con la búsqueda (H8) y el orden (H9) sin borrar ni sobrescribir el arreglo guardado. Las publicaciones antiguas sin etiqueta se normalizan a `general` mediante `normalizarEtiqueta` en `getPosts` (H15), y la migración se persiste una sola vez. |
 | H16 Publicaciones favoritas | 3 | ✔ Implementada / cumple criterios | Cada publicación muestra una acción con estado visual para marcarla o quitarla de Favoritos. `toggleFavorite(postId)` actualiza únicamente `post.favorita` por id y persiste en la lista original. `estadoFeed.soloFavoritas` filtra la vista y se combina con búsqueda, etiquetas y orden. Los datos antiguos se normalizan a `favorita: false`. |
 | H17 Borrador automático | 3 | ✔ Implementada / cumple criterios | `saveDraft`, `getDraft` y `clearDraft` usan una clave independiente y almacenan solo nombre y mensaje. Los campos se guardan al escribir, se restauran al cargar y el contador se recalcula. Las validaciones y fallos de publicación conservan el borrador; publicar correctamente o descartarlo lo elimina. |
+| H18 Paginación | 5 | ✔ Implementada / cumple criterios | `PUBLICACIONES_POR_PAGINA = 5` y `estadoFeed.pagina` (publicaciones.js). `calcularPaginacion` devuelve la porción a mostrar y ajusta la página cuando queda fuera de rango (al eliminar la última publicación de una página, o al buscar, filtrar u ordenar desde una página avanzada). `renderPosts` aplica `slice` solo sobre la copia visible: el arreglo guardado no se divide ni se vuelve a escribir, y sigue existiendo una única clave `publicaciones`. La barra `#paginacion` muestra "Página X de Y", desactiva Anterior en la primera y Siguiente en la última, y se oculta cuando no hay resultados. Buscar, ordenar, filtrar por etiqueta o por favoritas y publicar vuelven a la página 1 (app.js). |
+| H19 Exportar e importar respaldo | 5 | ✔ Implementada / cumple criterios | `construirRespaldo` genera `{ version, exportado, publicaciones }` con las publicaciones ya normalizadas (comentarios, respuestas, reacciones, etiqueta, favorita y reportes). Exportar descarga un `.json` con un Blob; Importar abre un `input type="file"` oculto y lee el archivo con `FileReader`. `validarRespaldo` acepta el objeto con metadatos o un arreglo suelto, comprueba tipo, `id` válido y sin repetir, `nombre`/`mensaje` de texto y `comentarios` como arreglo, y **termina antes** de escribir; solo entonces se pide confirmación y `importarRespaldo` llama a `savePosts`. Un archivo inválido o una confirmación cancelada dejan los datos intactos. Las propiedades que falten en respaldos antiguos las completa la normalización de `getPosts`. El contenido del archivo nunca se ejecuta: únicamente se usa `JSON.parse` y se leen propiedades. |
+| H20 Reportar y moderar contenido | 5 | ✔ Implementada / cumple criterios | Cada publicación tiene el botón ⚑ Reportar, que despliega un panel con los motivos Spam, Ofensivo y Otro; Cancelar cierra el panel sin guardar y Confirmar se deshabilita mientras registra, de modo que la misma acción no se guarda dos veces (`reportPost` además devuelve `duplicado: true` si ya existe ese motivo). El estado vive en `post.reportes` dentro del objeto de la publicación y todas las operaciones usan `post.id`, nunca la posición en pantalla. La publicación reportada muestra la insignia "⚑ Reportada" y **sigue visible** en el feed. El botón ⚑ Moderación (N) despliega la sección `#moderacion`, que lista autor, mensaje y motivos con `dismissReports` (descartar) y `deletePost` con confirmación (eliminar). Los reportes persisten al recargar y `normalizarReportes` convierte en lista vacía los datos antiguos o dañados. |
 | H11 | 2 | ✔ Implementada / cumple criterios | Constante compartida `LIMITE_MENSAJE = 200` (publicaciones.js), `maxlength="200"` en el formulario de creación y en la edición, contador "Quedan N caracteres" en el compositor que se actualiza al escribir y vuelve a 200 al publicar, validación al crear y al guardar una edición (no permite superar el límite), resto de funciones sin cambios. |
 
 ### Funciones de la versión base (conservadas)
@@ -346,6 +391,30 @@ Verificación realizada sobre el código actual (rama `main`) revisando los crit
 | Cargar publicaciones antiguas sin etiqueta | Aparecen como General (`normalizarEtiqueta`) y la migración se persiste. |
 | Filtro + orden | El orden (recientes/antiguas/más gustadas) se aplica sobre el subconjunto filtrado. |
 | Etiqueta después de recargar | La etiqueta viaja dentro del objeto guardado en LocalStorage. |
+
+### Pruebas mínimas de H18, H19 y H20 ejecutadas
+Automatizadas con Node sobre la lógica de `storage.js` y `publicaciones.js`, y comprobadas después en el navegador (26 pruebas, 0 fallos).
+
+| Historia | Prueba | Resultado |
+| --- | --- | --- |
+| H18 | Crear 12 publicaciones y revisar la distribución | 5 – 5 – 2 en tres páginas. |
+| H18 | Avanzar y retroceder hasta los extremos | Anterior se desactiva en la página 1 y Siguiente en la última; pulsar de más no cambia la vista. |
+| H18 | Buscar un resultado desde la tercera página | La vista pasa a "Página 1 de 1" y muestra la publicación encontrada. |
+| H18 | Eliminar todas las publicaciones de la última página | La vista pasa a "Página 2 de 2" y quedan 10 publicaciones. |
+| H18 | Recargar y recorrer todas las páginas | Se muestran las 12 publicaciones sin repetirse; la clave `publicaciones` no cambia. |
+| H19 | Exportar, borrar LocalStorage e importar | Las publicaciones, comentarios, respuestas y reacciones quedan idénticas al respaldo. |
+| H19 | Cancelar la confirmación de importación | Aviso "Importación cancelada" y ningún dato modificado. |
+| H19 | Importar texto plano, JSON mal formado y JSON con estructura incorrecta | Cada caso muestra su mensaje y conserva los datos actuales. |
+| H19 | Importar un respaldo antiguo con propiedades faltantes | Se restaura como General, no favorita, sin reportes y con `likes` convertido en Me gusta. |
+| H19 | Importar con la lista vacía y con publicaciones existentes | En ambos casos queda exactamente el contenido del archivo. |
+| H20 | Reportar la segunda de tres publicaciones | Solo esa aparece en Moderación con su motivo; las otras siguen sin reportes. |
+| H20 | Cancelar un reporte antes de confirmar | No se guarda nada (`reportes` sigue vacío). |
+| H20 | Confirmar dos veces el mismo motivo | Queda un único reporte y se avisa que ya existe. |
+| H20 | Descartar un reporte | La publicación sigue visible en el feed y desaparece de Moderación. |
+| H20 | Eliminar desde Moderación y recargar | La publicación no reaparece. |
+| H20 | Buscar u ordenar antes de reportar | Se marca la publicación correcta (se localiza por `id`). |
+| Regresión | Publicar, comentar, responder, reaccionar y marcar favorita con la paginación activa | Todo sigue funcionando; el resumen se actualiza y el borrador se limpia al publicar. |
+| Regresión | LocalStorage vacío, corrupto o con datos anteriores a la sesión | La aplicación inicia sin errores en consola. |
 
 ### Pruebas mínimas de H5 ejecutables en el código
 - Cancelar confirmación conserva la publicación: cubierto por la salida temprana en el manejador de Eliminar.
