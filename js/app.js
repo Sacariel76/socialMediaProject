@@ -24,6 +24,9 @@ document.addEventListener("DOMContentLoaded", function () {
   const selectorEtiqueta = document.getElementById("etiqueta-publicacion");
   const botonesFiltro = document.querySelectorAll(".filtro-etiqueta");
 
+  const CLAVE_FILTRO_ETIQUETA = "filtro-etiqueta";
+  const FILTROS_VALIDOS = ["todas", "general", "estudio", "evento", "ayuda"];
+
   buscar.addEventListener("input", function () {
     estadoFeed.busqueda = buscar.value.trim();
     renderPosts();
@@ -42,8 +45,41 @@ document.addEventListener("DOMContentLoaded", function () {
         otro.classList.toggle("activo", otro === boton);
       });
 
+      try {
+        localStorage.setItem(
+          CLAVE_FILTRO_ETIQUETA,
+          estadoFeed.etiqueta
+        );
+      } catch (error) {
+        // El filtro sigue funcionando aunque no se pueda persistir.
+      }
+
       renderPosts();
     });
+  });
+
+  // Restaura el filtro seleccionado al recargar (H15).
+  let filtroGuardado = null;
+
+  try {
+    filtroGuardado = localStorage.getItem(
+      CLAVE_FILTRO_ETIQUETA
+    );
+  } catch (error) {
+    // Sin filtro guardado se usa Todas.
+  }
+
+  const filtroInicial = FILTROS_VALIDOS.includes(filtroGuardado)
+    ? filtroGuardado
+    : "todas";
+
+  estadoFeed.etiqueta = filtroInicial;
+
+  botonesFiltro.forEach(function (boton) {
+    boton.classList.toggle(
+      "activo",
+      boton.dataset.etiqueta === filtroInicial
+    );
   });
 
   mensaje.addEventListener("input", actualizarContadorCaracteres);
