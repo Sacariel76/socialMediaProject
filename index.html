@@ -156,6 +156,7 @@
     .compositor-pie {
       display: flex;
       align-items: center;
+      flex-wrap: wrap;
       gap: 10px;
       margin-top: 8px;
       padding-top: 8px;
@@ -210,6 +211,28 @@
 
     .compositor-pie .btn-publicar:hover {
       background: var(--azul-oscuro);
+    }
+
+    .btn-descartar-borrador {
+      border: 1px solid var(--borde);
+      border-radius: 6px;
+      padding: 8px 12px;
+      background: transparent;
+      color: var(--texto-suave);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-descartar-borrador:hover:not(:disabled) {
+      border-color: var(--peligro);
+      color: var(--peligro);
+    }
+
+    .btn-descartar-borrador:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
     }
 
     .contador-caracteres {
@@ -269,6 +292,31 @@
 
     .toolbar-conteo strong {
       color: var(--texto);
+    }
+
+    .btn-filtro-favoritas {
+      margin-left: auto;
+      border: 1px solid var(--borde);
+      border-radius: 16px;
+      padding: 7px 13px;
+      background: var(--fondo);
+      color: var(--texto-suave);
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .btn-filtro-favoritas:hover {
+      border-color: #d89b00;
+      color: #9a6700;
+    }
+
+    .btn-filtro-favoritas.activo {
+      border-color: #d89b00;
+      background: #fff3bf;
+      color: #7a5100;
     }
 
     #orden-publicaciones {
@@ -365,6 +413,11 @@
       border-radius: 8px;
       padding: 14px 14px 4px;
       position: relative;
+    }
+
+    .publicacion-favorita {
+      border-color: #e5b323;
+      box-shadow: 0 1px 4px rgba(181, 128, 0, 0.22);
     }
 
     .publicacion .nombre {
@@ -771,6 +824,15 @@
       color: var(--texto);
     }
 
+    .botones-publicacion .btn-favorito.activo {
+      background: #fff3bf;
+      color: #7a5100;
+    }
+
+    .botones-publicacion .btn-favorito.activo:hover {
+      background: #ffe89a;
+    }
+
     .btn-comentar {
       font-size: 14px;
     }
@@ -818,6 +880,18 @@
 
       .form-respuesta input {
         width: 100%;
+      }
+
+      .toolbar {
+        flex-wrap: wrap;
+      }
+
+      .btn-filtro-favoritas {
+        margin-left: 0;
+      }
+
+      .botones-publicacion button {
+        font-size: 12px;
       }
     }
     /* Editar y eliminar comentarios - H12 */
@@ -972,6 +1046,12 @@
           <option value="evento">Evento</option>
           <option value="ayuda">Ayuda</option>
         </select>
+        <button
+          type="button"
+          id="descartar-borrador"
+          class="btn-descartar-borrador"
+          disabled
+        >Descartar borrador</button>
         <span id="contador-caracteres" class="contador-caracteres" aria-live="polite">Quedan 200 caracteres</span>
         <button type="submit" id="btn-publicar" class="btn-publicar">Publicar</button>
       </div>
@@ -981,6 +1061,12 @@
 
     <div class="toolbar">
       <span class="toolbar-conteo" id="conteo-publicaciones">0 publicaciones</span>
+      <button
+        type="button"
+        id="filtro-favoritas"
+        class="btn-filtro-favoritas"
+        aria-pressed="false"
+      >★ Solo favoritas</button>
       <label for="orden-publicaciones" class="oculto">Ordenar por</label>
       <select id="orden-publicaciones" name="orden">
         <option value="recientes">Más recientes</option>

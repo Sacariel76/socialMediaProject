@@ -212,6 +212,27 @@ Pruebas mínimas
 
 Restricción técnica: Guardar la etiqueta dentro del objeto de la publicación. Filtrar solamente cambia lo que se muestra; no debe borrar ni sobrescribir el arreglo original.
 
+### H16. Publicaciones favoritas (3 puntos)
+Como estudiante, quiero marcar publicaciones como favoritas para encontrarlas rápidamente después.
+
+Criterios principales
+- Cada publicación permite marcar o quitar el estado favorito y lo indica visualmente.
+- El filtro Solo favoritas funciona junto con la búsqueda, las etiquetas y el orden.
+- El estado permanece al recargar; las publicaciones antiguas inician con `favorita: false`.
+- Cambiar Favoritos no modifica reacciones, comentarios ni respuestas.
+
+Restricción técnica: El estado se guarda en la propiedad booleana `favorita` del objeto de publicación existente. No se crea una segunda lista en LocalStorage.
+
+### H17. Borrador automático (3 puntos)
+Como estudiante, quiero recuperar el texto que estaba escribiendo para no perderlo al cerrar o recargar la página.
+
+- Nombre y mensaje se guardan automáticamente y se recuperan al iniciar.
+- Las validaciones fallidas conservan el borrador.
+- Publicar correctamente o usar Descartar borrador limpia los campos y el borrador.
+- El contador de caracteres se actualiza con el mensaje recuperado.
+
+Restricción técnica: El borrador utiliza la clave `borrador-publicacion`, separada de `publicaciones`, y contiene únicamente `nombre` y `mensaje`.
+
 ## 5. Pruebas de regresión obligatorias
 
 | N.º | Prueba | Resultado esperado | Estado |
@@ -296,6 +317,8 @@ Verificación realizada sobre el código actual (rama `main`) revisando los crit
 | H13 Reacciones múltiples | 5 | ✔ Implementada / cumple criterios | Cada publicación tiene tres botones (👍 Me gusta, ❤️ Me encanta, 😄 Me divierte) y una fila de contadores separados por tipo. `incrementReaction(postId, tipo)` (storage.js) aumenta solo el tipo indicado de la publicación buscada por `id`, sin tocar las demás. Los datos viven en `post.reacciones = { megusta, meencanta, medivierte }` dentro del objeto de la publicación; `normalizarPost` asigna cero a las propiedades faltantes y convierte el `likes` de las publicaciones antiguas en `megusta`, por lo que los datos previos no rompen la aplicación. `likes` se mantiene sincronizado con `megusta` para no alterar H9 (Más gustadas) ni H10. El resumen muestra los totales de los tres tipos. |
 | H14 Responder comentarios | 5 | ✔ Implementada / cumple criterios | Cada comentario y cada respuesta permiten desplegar un formulario con nombre y texto obligatorios. `addReply(postId, elementoPadreId, respuesta)` recorre el árbol por `id`, asigna un identificador único y guarda la respuesta bajo el padre correcto. El renderizado y la normalización son recursivos, por lo que se admiten conversaciones de varios niveles y datos antiguos sin `respuestas`. También se controlan referencias inexistentes y errores de escritura. |
 | H15 Etiquetas y filtro por tema | 3 | ✔ Implementada / cumple criterios | Selector de etiqueta (General, Estudio, Evento, Ayuda) en el compositor; la etiqueta se guarda dentro del objeto de la publicación (`post.etiqueta`, app.js) y persiste en LocalStorage. Cada publicación muestra su etiqueta como insignia de color (`crearPublicacion`). Los botones de filtro (Todas/General/Estudio/Evento/Ayuda) cambian solo `estadoFeed.etiqueta`; `obtenerPostsVisibles` filtra sobre una copia y después ordena, por lo que el filtro se combina con la búsqueda (H8) y el orden (H9) sin borrar ni sobrescribir el arreglo guardado. Las publicaciones antiguas sin etiqueta se normalizan a `general` mediante `normalizarEtiqueta` en `getPosts` (H15), y la migración se persiste una sola vez. |
+| H16 Publicaciones favoritas | 3 | ✔ Implementada / cumple criterios | Cada publicación muestra una acción con estado visual para marcarla o quitarla de Favoritos. `toggleFavorite(postId)` actualiza únicamente `post.favorita` por id y persiste en la lista original. `estadoFeed.soloFavoritas` filtra la vista y se combina con búsqueda, etiquetas y orden. Los datos antiguos se normalizan a `favorita: false`. |
+| H17 Borrador automático | 3 | ✔ Implementada / cumple criterios | `saveDraft`, `getDraft` y `clearDraft` usan una clave independiente y almacenan solo nombre y mensaje. Los campos se guardan al escribir, se restauran al cargar y el contador se recalcula. Las validaciones y fallos de publicación conservan el borrador; publicar correctamente o descartarlo lo elimina. |
 | H11 | 2 | ✔ Implementada / cumple criterios | Constante compartida `LIMITE_MENSAJE = 200` (publicaciones.js), `maxlength="200"` en el formulario de creación y en la edición, contador "Quedan N caracteres" en el compositor que se actualiza al escribir y vuelve a 200 al publicar, validación al crear y al guardar una edición (no permite superar el límite), resto de funciones sin cambios. |
 
 ### Funciones de la versión base (conservadas)

@@ -1,4 +1,5 @@
 const STORAGE_KEY = "publicaciones";
+const DRAFT_STORAGE_KEY = "borrador-publicacion";
 
 /** Tipos de reacción disponibles (H13). */
 const TIPOS_REACCION = ["megusta", "meencanta", "medivierte"];
@@ -63,7 +64,7 @@ function normalizarReacciones(post) {
  * los datos antiguos de LocalStorage sigan funcionando.
  *
  * @param {Object} post Publicación guardada.
- * @returns {Object} Publicación con reacciones y likes consistentes.
+ * @returns {Object} Publicación con sus propiedades actuales normalizadas.
  */
 function normalizarPost(post) {
   const base = post && typeof post === "object" ? post : {};
@@ -73,6 +74,7 @@ function normalizarPost(post) {
   return {
     ...base,
     etiqueta: normalizarEtiqueta(base.etiqueta),
+    favorita: base.favorita === true,
     reacciones,
     likes: reacciones.megusta,
   };
@@ -332,6 +334,11 @@ function getPosts() {
       huboCambios = true;
     }
 
+    // Las publicaciones anteriores a H16 se consideran no favoritas.
+    if (normalizado.favorita !== post?.favorita) {
+      huboCambios = true;
+    }
+
     if (!Array.isArray(normalizado.comentarios)) {
       return normalizado;
     }
@@ -505,6 +512,139 @@ function updatePost(postId, mensaje) {
   });
 
   savePosts(postsActualizados);
+}
+
+/** Guarda únicamente los campos recuperables del compositor (H17). */
+function saveDraft(nombre, mensaje) {
+  const borrador = {
+    nombre: typeof nombre === "string" ? nombre : "",
+    mensaje: typeof mensaje === "string" ? mensaje : "",
+  };
+
+  try {
+    if (!borrador.nombre && !borrador.mensaje) {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } else {
+      localStorage.setItem(
+        DRAFT_STORAGE_KEY,
+        JSON.stringify(borrador)
+      );
+    }
+
+    return true;
+  } catch (error) {
+    console.error("No fue posible guardar el borrador:", error);
+    return false;
+  }
+}
+
+/** Recupera un borrador válido sin afectar las publicaciones guardadas. */
+function getDraft() {
+  try {
+    const datos = localStorage.getItem(DRAFT_STORAGE_KEY);
+
+    if (!datos) {
+      return null;
+    }
+
+    const borrador = JSON.parse(datos);
+
+    if (
+      !borrador ||
+      typeof borrador !== "object" ||
+      Array.isArray(borrador)
+    ) {
+      throw new Error("El borrador guardado no es válido.");
+    }
+
+    return {
+      nombre:
+        typeof borrador.nombre === "string"
+          ? borrador.nombre
+          : "",
+      mensaje:
+        typeof borrador.mensaje === "string"
+          ? borrador.mensaje
+          : "",
+    };
+  } catch (error) {
+    console.error("No fue posible recuperar el borrador:", error);
+
+    try {
+      localStorage.removeItem(DRAFT_STORAGE_KEY);
+    } catch (removeError) {
+      console.error(
+        "No fue posible descartar el borrador inválido:",
+        removeError
+      );
+    }
+
+    return null;
+  }
+}
+
+/** Elimina el borrador del compositor (H17). */
+function clearDraft() {
+  try {
+    localStorage.removeItem(DRAFT_STORAGE_KEY);
+    return true;
+  } catch (error) {
+    console.error("No fue posible descartar el borrador:", error);
+    return false;
+  }
+}
+
+/**
+ * Alterna el estado favorito de una publicación (H16).
+ *
+ * @param {number} postId Identificador de la publicación.
+ * @returns {{ ok: boolean, favorita?: boolean, mensaje?: string }} Resultado.
+ */
+function toggleFavorite(postId) {
+  const posts = getPosts();
+  let encontrada = false;
+  let favorita = false;
+
+  const postsActualizados = posts.map((post) => {
+    if (post.id !== postId) {
+      return post;
+    }
+
+    encontrada = true;
+    favorita = !post.favorita;
+
+    return {
+      ...post,
+      favorita,
+    };
+  });
+
+  if (!encontrada) {
+    return {
+      ok: false,
+      mensaje: "La publicación seleccionada ya no existe.",
+    };
+  }
+
+  try {
+    savePosts(postsActualizados);
+  } catch (error) {
+    console.error(
+      "No fue posible actualizar la publicación favorita:",
+      error
+    );
+
+    return {
+      ok: false,
+      mensaje:
+        "No fue posible actualizar Favoritos. Inténtalo nuevamente.",
+    };
+  }
+
+  return {
+    ok: true,
+    favorita,
+  };
 }
 
 /**

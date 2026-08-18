@@ -14,6 +14,7 @@ const estadoFeed = {
   busqueda: "",
   orden: "recientes",
   etiqueta: "todas",
+  soloFavoritas: false,
 };
 
 /**
@@ -132,8 +133,8 @@ function ordenarPublicaciones(posts, criterio) {
 
 /**
  * Obtiene las publicaciones visibles aplicando la búsqueda (H8),
- * el orden (H9) y el filtro por etiqueta (H15) sin modificar
- * el arreglo guardado.
+ * el orden (H9), el filtro por etiqueta (H15) y Favoritos (H16)
+ * sin modificar el arreglo guardado.
  *
  * @returns {Array} Copia filtrada y ordenada de las publicaciones.
  */
@@ -156,6 +157,10 @@ function obtenerPostsVisibles() {
     posts = posts.filter((post) => {
       return post.etiqueta === etiquetaFiltro;
     });
+  }
+
+  if (estadoFeed.soloFavoritas) {
+    posts = posts.filter((post) => post.favorita === true);
   }
 
   return ordenarPublicaciones(posts, estadoFeed.orden);
@@ -695,7 +700,9 @@ function crearFormularioComentario(post) {
 
 function crearPublicacion(post) {
   const li = document.createElement("li");
-  li.className = "publicacion";
+  li.className = post.favorita
+    ? "publicacion publicacion-favorita"
+    : "publicacion";
 
   // Nombre
   const nombre = document.createElement("div");
@@ -807,6 +814,37 @@ function crearPublicacion(post) {
     }
   });
 
+  // Botón Favorito (H16)
+  const botonFavorito = document.createElement("button");
+  botonFavorito.type = "button";
+  botonFavorito.className = post.favorita
+    ? "btn-favorito activo"
+    : "btn-favorito";
+  botonFavorito.textContent = post.favorita
+    ? "★ Favorita"
+    : "☆ Favorito";
+  botonFavorito.setAttribute(
+    "aria-pressed",
+    String(post.favorita)
+  );
+  botonFavorito.setAttribute(
+    "aria-label",
+    post.favorita
+      ? `Quitar la publicación de ${post.nombre} de favoritos`
+      : `Marcar la publicación de ${post.nombre} como favorita`
+  );
+
+  botonFavorito.addEventListener("click", function () {
+    const resultado = toggleFavorite(post.id);
+
+    if (!resultado.ok) {
+      window.alert(resultado.mensaje);
+      return;
+    }
+
+    renderPosts();
+  });
+
   // Botón Editar
   const botonEditar = document.createElement("button");
   botonEditar.type = "button";
@@ -839,6 +877,7 @@ function crearPublicacion(post) {
 
   // Agregar botones
   botones.appendChild(botonComentar);
+  botones.appendChild(botonFavorito);
   botones.appendChild(botonEditar);
   botones.appendChild(botonEliminar);
 
